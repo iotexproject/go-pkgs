@@ -11,26 +11,33 @@ const (
 	_defaultQueueLen   = 1000
 )
 
-type Throttler struct {
-	queue   chan struct{}
-	tps     uint64
-	workers uint64
-}
+type (
+	// Throttler struct
+	Throttler struct {
+		queue   chan struct{}
+		tps     uint64
+		workers uint64
+	}
 
-type Option func(*Throttler)
+	// Option is an option
+	Option func(*Throttler)
+)
 
+// SetWorkerNum sets worker number
 func SetWorkerNum(n uint64) Option {
 	return func(t *Throttler) {
 		t.workers = n
 	}
 }
 
+// SetQueueLen sets queue length
 func SetQueueLen(n uint64) Option {
 	return func(t *Throttler) {
 		t.queue = make(chan struct{}, n)
 	}
 }
 
+// New creates an instance of throttler
 func New(tps uint64, opts ...Option) *Throttler {
 	t := &Throttler{
 		queue:   make(chan struct{}, _defaultQueueLen),
@@ -43,6 +50,7 @@ func New(tps uint64, opts ...Option) *Throttler {
 	return t
 }
 
+// Start starts the throttler
 func (t *Throttler) Start(ctx context.Context) {
 	go func() {
 		var workers sync.WaitGroup
