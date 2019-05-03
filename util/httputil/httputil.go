@@ -15,16 +15,25 @@ const (
 	_idleTimeout     = 120 * time.Second
 )
 
-type ServerOption func(*serverConfig)
+type (
+	// ServerOption is a server option
+	ServerOption func(*serverConfig)
 
-type serverConfig struct {
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
-}
+	// ListenerOption is a listener option
+	ListenerOption func(*listenerConfig)
 
-type ListenerOption func(*listenerConfig)
+	serverConfig struct {
+		ReadTimeout  time.Duration
+		WriteTimeout time.Duration
+		IdleTimeout  time.Duration
+	}
 
+	listenerConfig struct {
+		ConnectionCount int
+	}
+)
+
+// SetTimeout sets timeout
 func SetTimeout(r, w, i time.Duration) ServerOption {
 	return func(cfg *serverConfig) {
 		cfg.ReadTimeout = r
@@ -33,10 +42,7 @@ func SetTimeout(r, w, i time.Duration) ServerOption {
 	}
 }
 
-type listenerConfig struct {
-	ConnectionCount int
-}
-
+// SetConnectionCount sets connection count
 func SetConnectionCount(c int) ListenerOption {
 	return func(cfg *listenerConfig) { cfg.ConnectionCount = c }
 }
