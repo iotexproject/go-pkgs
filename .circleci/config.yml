@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.11.6
+        environment:
+          GO111MODULE: "ON"
+    working_directory: ~/go/src/github.com/iotexproject/go-pkgs
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }} 
+      - run: go mod download
+      - run: go mod vendor
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+              - ~/go/pkg/mod
+#      - run: go test ./...
+      - run: GO111MODULE=on go test -race -cover -v $(go list ./... | grep -v /vendor/)
