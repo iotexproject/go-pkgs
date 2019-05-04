@@ -5,25 +5,25 @@ jobs:
       - image: circleci/golang:1.11.6
         environment:
           CIRCLE_PROJECT_REPONAME: go-pkgs
-    working_directory: ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}
+    working_directory: ~/go/src/github.com/iotexproject/go-pkgs
     steps:
       - checkout
       - restore_cache:
           key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
           paths:
-              - ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor
+              - ~/go/src/github.com/iotexproject/go-pkgs/vendor
       - run:
           name: "get vendor"
           command: |
             export GOPATH=~/go
-            if [ ! -d ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor ]; then
+            if [ ! -d ~/go/src/github.com/iotexproject/go-pkgs/vendor ]; then
                 # dep init
                 dep ensure
             fi
       - save_cache:
           key: gopkg-{{ .Branch }}-{{ checksum "Gopkg.lock" }}
           paths:
-              - ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}/vendor
+              - ~/go/src/github.com/iotexproject/go-pkgs/vendor
       - run:
           name: go test
           command: |
