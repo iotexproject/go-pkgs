@@ -3,8 +3,8 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.11.6
-    environment:
-      CIRCLE_PROJECT_REPONAME: go-pkgs
+        environment:
+          CIRCLE_PROJECT_REPONAME: go-pkgs
     working_directory: ~/go/src/github.com/iotexproject/${CIRCLE_PROJECT_REPONAME}
     steps:
       - checkout
