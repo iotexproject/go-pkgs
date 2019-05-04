@@ -17,7 +17,7 @@ jobs:
           command: |
             export GOPATH=~/go
             if [ ! -d ~/go/src/github.com/iotexproject/go-pkgs/vendor ]; then
-                # dep init
+                dep init
                 dep ensure
             fi
       - save_cache:
