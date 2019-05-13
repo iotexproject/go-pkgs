@@ -7,6 +7,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/ethereum/go-ethereum v1.8.27
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef
 	github.com/iotexproject/iotex-address v0.1.0
 	github.com/iotexproject/iotex-core v0.5.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
