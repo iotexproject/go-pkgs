@@ -7,6 +7,8 @@
 package hash
 
 import (
+	"encoding/hex"
+
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -60,4 +62,22 @@ func BytesToHash160(b []byte) Hash160 {
 	}
 	copy(h[20-len(b):], b)
 	return h
+}
+
+// HexStringToHash256 decodes the hex string, then copy byte slice into hash
+func HexStringToHash256(s string) (Hash256, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return ZeroHash256, err
+	}
+	return BytesToHash256(b), nil
+}
+
+// HexStringToHash160 decodes the hex string, then copy byte slice into hash
+func HexStringToHash160(s string) (Hash160, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return ZeroHash160, err
+	}
+	return BytesToHash160(b), nil
 }

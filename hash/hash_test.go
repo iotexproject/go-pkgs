@@ -7,7 +7,6 @@
 package hash
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,10 +25,12 @@ func TestHash(t *testing.T) {
 
 	for _, test := range tests {
 		h := Hash256b([]byte(test.msg))
-		e, _ := hex.DecodeString(test.hash)
-		require.Equal(e, h[:])
+		eh, err := HexStringToHash256(test.hash)
+		require.NoError(err)
+		require.Equal(eh, h)
 		h1 := Hash160b([]byte(test.msg))
-		require.Equal(e[12:], h1[:])
+		eh1, err := HexStringToHash160(test.hash)
+		require.Equal(eh1, h1)
 		require.Equal(h, BytesToHash256(append([]byte{1, 2, 3, 4}, h[:]...)))
 		require.Equal(h1, BytesToHash160(append([]byte{1, 2, 3, 4}, h1[:]...)))
 	}
