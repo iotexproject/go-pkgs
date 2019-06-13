@@ -15,10 +15,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBloomFilter_Add(t *testing.T) {
+func TestBloom2048b_Add(t *testing.T) {
 	require := require.New(t)
 
-	f, err := NewBloomFilter(2048, 3)
+	f, err := newBloom2048(3)
 	require.NoError(err)
 	var key []hash.Hash256
 	for i := 0; i < 50; i++ {
@@ -44,27 +44,7 @@ func TestBloomFilter_Add(t *testing.T) {
 	}
 }
 
-func TestBloomFilter_Bytes(t *testing.T) {
-	require := require.New(t)
-
-	f, err := BloomFilterFromBytes(hash.ZeroHash256[:], 1024, 3)
-	require.Error(err)
-	f, err = BloomFilterFromBytes(hash.ZeroHash256[:], 2048, 17)
-	require.Error(err)
-	f, err = BloomFilterFromBytes(hash.ZeroHash256[:], 2048, 3)
-	require.Error(err)
-	var k []byte
-	for i := 0; i < 8; i++ {
-		r := strconv.FormatInt(rand.Int63(), 10)
-		h := hash.Hash256b([]byte(r))
-		k = append(k, h[:]...)
-	}
-	f, err = BloomFilterFromBytes(k[:], 2048, 3)
-	require.NoError(err)
-	require.Equal(k[:], f.Bytes())
-}
-
-func TestBloomFilter_setBit(t *testing.T) {
+func TestBloom2048b_setBit(t *testing.T) {
 	require := require.New(t)
 
 	f := &bloom2048b{numHash: 3}

@@ -19,6 +19,27 @@ type (
 	}
 )
 
+// newBloom2048 returns a 2048-bit bloom filter
+func newBloom2048(h uint) (BloomFilter, error) {
+	if h == 0 || h > 16 {
+		return nil, errors.New("expecting 0 < number of hash functions <= 16")
+	}
+	return &bloom2048b{numHash: h}, nil
+}
+
+// bloom2048FromBytes constructs a 2048-bit bloom filter from bytes
+func bloom2048FromBytes(b []byte, h uint) (BloomFilter, error) {
+	if h == 0 || h > 16 {
+		return nil, errors.New("expecting 0 < number of hash functions <= 16")
+	}
+	if len(b) != 256 {
+		return nil, errors.Errorf("wrong length %d, expecting 256", len(b))
+	}
+	f := bloom2048b{numHash: h}
+	copy(f.array[:], b[:])
+	return &f, nil
+}
+
 // Add 32-byte key into bloom filter
 func (f *bloom2048b) Add(key []byte) {
 	if key == nil {
@@ -48,15 +69,6 @@ func (f *bloom2048b) Exist(key []byte) bool {
 // Bytes returns the bytes of bloom filter
 func (f *bloom2048b) Bytes() []byte {
 	return f.array[:]
-}
-
-// setBytes copies the bytes into bloom filter
-func (f *bloom2048b) setBytes(b []byte) error {
-	if len(b) != 256 {
-		return errors.Errorf("wrong length %d, expecting 256", len(b))
-	}
-	copy(f.array[:], b[:])
-	return nil
 }
 
 func (f *bloom2048b) setBit(bytePos, bitPos byte) {

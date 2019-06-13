@@ -19,22 +19,14 @@ type (
 		Exist([]byte) bool
 		// Bytes returns the bytes of bloom filter
 		Bytes() []byte
-		// setBytes copies the bytes into bloom filter
-		setBytes([]byte) error
 	}
 )
 
 // NewBloomFilter returns a new bloom filter
 func NewBloomFilter(m, h uint) (BloomFilter, error) {
-	if h == 0 {
-		return nil, errors.New("need a positive number of hash functions")
-	}
 	switch m {
 	case 2048:
-		if h == 0 || h > 16 {
-			return nil, errors.New("expecting 0 < number of hash functions <= 16")
-		}
-		return &bloom2048b{numHash: h}, nil
+		return newBloom2048(h)
 	default:
 		return nil, errors.Errorf("bloom filter size %d not supported", m)
 	}
@@ -42,12 +34,10 @@ func NewBloomFilter(m, h uint) (BloomFilter, error) {
 
 // BloomFilterFromBytes constructs a bloom filter from bytes
 func BloomFilterFromBytes(b []byte, m, h uint) (BloomFilter, error) {
-	f, err := NewBloomFilter(m, h)
-	if err != nil {
-		return nil, err
+	switch m {
+	case 2048:
+		return bloom2048FromBytes(b, h)
+	default:
+		return nil, errors.Errorf("bloom filter size %d not supported", m)
 	}
-	if err := f.setBytes(b); err != nil {
-		return nil, err
-	}
-	return f, nil
 }
