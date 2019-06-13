@@ -7,32 +7,31 @@
 package bloom
 
 import (
-	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/pkg/errors"
 )
 
 type (
 	// BloomFilter interface
 	BloomFilter interface {
-		// Add 32-byte key into bloom filter
-		Add(hash.Hash256)
+		// Add key into bloom filter
+		Add([]byte)
 		// Exist checks if a key is in bloom filter
-		Exist(hash.Hash256) bool
+		Exist([]byte) bool
 		// Bytes returns the bytes of bloom filter
 		Bytes() []byte
-		// SetBytes copies the bytes into bloom filter
-		SetBytes([]byte) error
+		// setBytes copies the bytes into bloom filter
+		setBytes([]byte) error
 	}
 )
 
 // NewBloomFilter returns a new bloom filter
-func NewBloomFilter(m, h int) (BloomFilter, error) {
-	if h <= 0 {
+func NewBloomFilter(m, h uint) (BloomFilter, error) {
+	if h == 0 {
 		return nil, errors.New("need a positive number of hash functions")
 	}
 	switch m {
 	case 2048:
-		if h <= 0 || h > 16 {
+		if h == 0 || h > 16 {
 			return nil, errors.New("expecting 0 < number of hash functions <= 16")
 		}
 		return &bloom2048b{numHash: h}, nil
@@ -42,12 +41,12 @@ func NewBloomFilter(m, h int) (BloomFilter, error) {
 }
 
 // BloomFilterFromBytes constructs a bloom filter from bytes
-func BloomFilterFromBytes(b []byte, m, h int) (BloomFilter, error) {
+func BloomFilterFromBytes(b []byte, m, h uint) (BloomFilter, error) {
 	f, err := NewBloomFilter(m, h)
 	if err != nil {
 		return nil, err
 	}
-	if err := f.SetBytes(b); err != nil {
+	if err := f.setBytes(b); err != nil {
 		return nil, err
 	}
 	return f, nil

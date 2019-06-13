@@ -24,20 +24,23 @@ func TestBloomFilter_Add(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		r := strconv.FormatInt(rand.Int63(), 10)
 		k := hash.Hash256b([]byte(r))
-		f.Add(k)
+		f.Add(k[:])
 		key = append(key, k)
 	}
 
 	// 50 keys exist
 	for _, k := range key {
-		require.True(f.Exist(k))
+		require.True(f.Exist(k[:]))
 	}
+
+	// empty key does not exist
+	require.False(f.Exist(nil))
 
 	// random keys should not exist
 	for i := 0; i < 100; i++ {
 		r := strconv.FormatInt(rand.Int63(), 10)
 		k := hash.Hash256b([]byte(r))
-		require.False(f.Exist(k))
+		require.False(f.Exist(k[:]))
 	}
 }
 

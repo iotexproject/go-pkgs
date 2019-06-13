@@ -15,23 +15,29 @@ type (
 	// bloom2048b implements a 2048-bit bloom filter
 	bloom2048b struct {
 		array   [256]byte
-		numHash int // number of hash function
+		numHash uint // number of hash function
 	}
 )
 
 // Add 32-byte key into bloom filter
-func (f *bloom2048b) Add(key hash.Hash256) {
-	h := hash.Hash256b(key[:])
+func (f *bloom2048b) Add(key []byte) {
+	if key == nil {
+		return
+	}
+	h := hash.Hash256b(key)
 	// each 2-byte pair used as output of hash function
-	for i := 0; i < f.numHash; i++ {
+	for i := uint(0); i < f.numHash; i++ {
 		f.setBit(h[2*i], h[2*i+1])
 	}
 }
 
 // Exist checks if a key is in bloom filter
-func (f *bloom2048b) Exist(key hash.Hash256) bool {
-	h := hash.Hash256b(key[:])
-	for i := 0; i < f.numHash; i++ {
+func (f *bloom2048b) Exist(key []byte) bool {
+	if key == nil {
+		return false
+	}
+	h := hash.Hash256b(key)
+	for i := uint(0); i < f.numHash; i++ {
 		if !f.chkBit(h[2*i], h[2*i+1]) {
 			return false
 		}
@@ -44,8 +50,8 @@ func (f *bloom2048b) Bytes() []byte {
 	return f.array[:]
 }
 
-// SetBytes copies the bytes into bloom filter
-func (f *bloom2048b) SetBytes(b []byte) error {
+// setBytes copies the bytes into bloom filter
+func (f *bloom2048b) setBytes(b []byte) error {
 	if len(b) != 256 {
 		return errors.Errorf("wrong length %d, expecting 256", len(b))
 	}
