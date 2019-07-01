@@ -7,6 +7,7 @@
 package crypto
 
 import (
+	"encoding/hex"
 	"strings"
 	"testing"
 
@@ -70,4 +71,18 @@ func TestCompatibility(t *testing.T) {
 	addr, err := address.FromBytes(nsk.PublicKey().Hash())
 	require.NoError(err)
 	require.Equal(ethAddr.Bytes(), addr.Bytes())
+}
+func TestCompressDecompress(t *testing.T) {
+	require := require.New(t)
+	compressedString := "0340a609475afa1f9a784cad0db5d5ba7dbaab2147a5d7b9bbde4d1334a0e40a5e"
+	compressd, err := hex.DecodeString(compressedString)
+	require.NoError(err)
+	pub, err := DecompressPubkey(compressd)
+	require.NoError(err)
+	x := hex.EncodeToString(pub.EcdsaPublicKey().X.Bytes())
+	y := hex.EncodeToString(pub.EcdsaPublicKey().Y.Bytes())
+	require.Equal("40a609475afa1f9a784cad0db5d5ba7dbaab2147a5d7b9bbde4d1334a0e40a5e", x)
+	require.Equal("188ac3f1c6bbbc336fdc33cb5e605ff7c3ee2d36249933b0322220a616a11fb3", y)
+	com := CompressPubkey(pub)
+	require.Equal(compressedString, hex.EncodeToString(com))
 }

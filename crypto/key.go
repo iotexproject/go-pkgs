@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
 
@@ -109,4 +110,20 @@ func StringToPubKeyBytes(pubKey string) ([]byte, error) {
 		return nil, errors.Wrap(ErrPublicKey, "Invalid public key length")
 	}
 	return pubKeyBytes, nil
+}
+
+// DecompressPubkey parses a public key in the 33-byte compressed format.
+func DecompressPubkey(pubkey []byte) (PublicKey, error) {
+	ecdsaPublicKey, err := crypto.DecompressPubkey(pubkey)
+	if err != nil {
+		return nil, err
+	}
+	return &secp256k1PubKey{
+		PublicKey: ecdsaPublicKey,
+	}, nil
+}
+
+// CompressPubkey encodes a public key to the 33-byte compressed format.
+func CompressPubkey(pubkey PublicKey) []byte {
+	return crypto.CompressPubkey(pubkey.EcdsaPublicKey())
 }
