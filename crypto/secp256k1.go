@@ -131,6 +131,9 @@ func (k *secp256k1PubKey) Verify(hash, sig []byte) bool {
 	}
 	// signature must be in the [R || S || V] format where V is 0 or 1
 	v := sig[secp256pubKeyLength-1]
+	if v >= 27 {
+		v -= 27
+	}
 	if !(v == 0 || v == 1) {
 		return false
 	}

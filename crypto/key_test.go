@@ -31,6 +31,11 @@ func TestKeypair(t *testing.T) {
 
 	pubKey, err := HexStringToPublicKey(publicKey)
 	require.NoError(err)
+
+	pubKey2, err := HexStringToPublicKey(publicKey[2:])
+	require.NoError(err)
+	require.Equal(pubKey, pubKey2)
+
 	priKey, err := HexStringToPrivateKey(privateKey)
 	require.NoError(err)
 

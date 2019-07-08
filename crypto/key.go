@@ -75,6 +75,9 @@ func HexStringToPrivateKey(prvKey string) (PrivateKey, error) {
 
 // BytesToPublicKey converts a byte slice to SECP256K1 PublicKey
 func BytesToPublicKey(pubKey []byte) (PublicKey, error) {
+	if len(pubKey) == 64 {
+		pubKey = append([]byte{4}, pubKey...)
+	}
 	return newSecp256k1PubKeyFromBytes(pubKey)
 }
 
