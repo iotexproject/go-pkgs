@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/pkg/errors"
 )
 
@@ -123,4 +124,13 @@ func KeystoreToPrivateKey(account accounts.Account, password string) (PrivateKey
 	return &secp256k1PrvKey{
 		PrivateKey: key.PrivateKey,
 	}, nil
+}
+
+// RecoverPubkey recovers the public key from signature
+func RecoverPubkey(msg, sig []byte) (PublicKey, error) {
+	if pk, err := secp256k1.RecoverPubkey(msg, sig); err == nil {
+		return newSecp256k1PubKeyFromBytes(pk)
+	}
+	// TODO: implement recover key for sm2
+	return nil, ErrInvalidKey
 }

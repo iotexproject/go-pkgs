@@ -76,8 +76,14 @@ func Test256sm2(t *testing.T) {
 		require.NoError(err)
 		require.EqualValues(0x30, sig[0])
 		require.EqualValues(len(sig), sig[1]+2)
-		require.Equal(true, sk.PublicKey().Verify(msg, sig))
+		require.True(sk.PublicKey().Verify(msg, sig))
 		require.NotEqual(s, sig)
 		s = sig
 	}
+	require.True(sk.PublicKey().Verify(msg, s))
+
+	// test recover pubkey
+	pk1, err = RecoverPubkey(msg, s)
+	require.Nil(pk1)
+	require.Equal(ErrInvalidKey, err)
 }
