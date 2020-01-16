@@ -1,4 +1,4 @@
-// Copyright (c) 2019 IoTeX
+// Copyright (c) 2020 IoTeX
 // This is an alpha (internal) release and is not suitable for production. This source code is provided 'as is' and no
 // warranties are given as to title or non-infringement, merchantability or fitness for purpose and, to the extent
 // permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
@@ -7,7 +7,6 @@
 package crypto
 
 import (
-	"crypto/ecdsa"
 	"encoding/hex"
 	"io/ioutil"
 
@@ -35,7 +34,7 @@ type (
 	PublicKey interface {
 		Bytes() []byte
 		HexString() string
-		EcdsaPublicKey() *ecdsa.PublicKey
+		EcdsaPublicKey() interface{}
 		Hash() []byte
 		Verify([]byte, []byte) bool
 	}
@@ -43,19 +42,24 @@ type (
 	PrivateKey interface {
 		Bytes() []byte
 		HexString() string
-		EcdsaPrivateKey() *ecdsa.PrivateKey
+		EcdsaPrivateKey() interface{}
 		PublicKey() PublicKey
 		Sign([]byte) ([]byte, error)
 		Zero()
 	}
 )
 
-// GenerateKey generates a SECP256K1 PrivateKey
+// GenerateKey generates a SECP256k1 PrivateKey
 func GenerateKey() (PrivateKey, error) {
 	return newSecp256k1PrvKey()
 }
 
-// HexStringToPublicKey decodes a string to SECP256K1 PublicKey
+// GenerateKeySm2 generates a P256sm2 PrivateKey
+func GenerateKeySm2() (PrivateKey, error) {
+	return newP256sm2PrvKey()
+}
+
+// HexStringToPublicKey decodes a string to PublicKey
 func HexStringToPublicKey(pubKey string) (PublicKey, error) {
 	b, err := hex.DecodeString(pubKey)
 	if err != nil {
@@ -64,7 +68,7 @@ func HexStringToPublicKey(pubKey string) (PublicKey, error) {
 	return BytesToPublicKey(b)
 }
 
-// HexStringToPrivateKey decodes a string to SECP256K1 PrivateKey
+// HexStringToPrivateKey decodes a string to PrivateKey
 func HexStringToPrivateKey(prvKey string) (PrivateKey, error) {
 	b, err := hex.DecodeString(prvKey)
 	if err != nil {
@@ -75,15 +79,34 @@ func HexStringToPrivateKey(prvKey string) (PrivateKey, error) {
 
 // BytesToPublicKey converts a byte slice to SECP256K1 PublicKey
 func BytesToPublicKey(pubKey []byte) (PublicKey, error) {
-	if len(pubKey) == 64 {
+	if len(pubKey) == secp256pubKeyLength-1 {
 		pubKey = append([]byte{4}, pubKey...)
 	}
-	return newSecp256k1PubKeyFromBytes(pubKey)
+
+	// check against P256k1
+	if len(pubKey) == secp256pubKeyLength {
+		return newSecp256k1PubKeyFromBytes(pubKey)
+	}
+
+	// check against P256sm2
+	if k, err := newP256sm2PubKeyFromBytes(pubKey); err == nil {
+		return k, nil
+	}
+	return nil, ErrPublicKey
 }
 
 // BytesToPrivateKey converts a byte slice to SECP256K1 PrivateKey
 func BytesToPrivateKey(prvKey []byte) (PrivateKey, error) {
-	return newSecp256k1PrvKeyFromBytes(prvKey)
+	// check against P256sm2
+	if len(prvKey) == secp256prvKeyLength {
+		return newSecp256k1PrvKeyFromBytes(prvKey)
+	}
+
+	// check against P256sm2
+	if k, err := newP256sm2PrvKeyFromBytes(prvKey); err == nil {
+		return k, nil
+	}
+	return nil, ErrPrivateKey
 }
 
 // KeystoreToPrivateKey generates PrivateKey from Keystore account
@@ -100,16 +123,4 @@ func KeystoreToPrivateKey(account accounts.Account, password string) (PrivateKey
 	return &secp256k1PrvKey{
 		PrivateKey: key.PrivateKey,
 	}, nil
-}
-
-// StringToPubKeyBytes converts a string of public key to byte slice
-func StringToPubKeyBytes(pubKey string) ([]byte, error) {
-	pubKeyBytes, err := hex.DecodeString(pubKey)
-	if err != nil {
-		return nil, err
-	}
-	if len(pubKeyBytes) != secp256pubKeyLength {
-		return nil, errors.Wrap(ErrPublicKey, "Invalid public key length")
-	}
-	return pubKeyBytes, nil
 }
