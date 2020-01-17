@@ -1,4 +1,4 @@
-// Copyright (c) 2019 IoTeX
+// Copyright (c) 2020 IoTeX
 // This is an alpha (internal) release and is not suitable for production. This source code is provided 'as is' and no
 // warranties are given as to title or non-infringement, merchantability or fitness for purpose and, to the extent
 // permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
@@ -64,7 +64,7 @@ func (k *secp256k1PrvKey) HexString() string {
 }
 
 // EcdsaPrivateKey returns the embedded ecdsa private key
-func (k *secp256k1PrvKey) EcdsaPrivateKey() *ecdsa.PrivateKey {
+func (k *secp256k1PrvKey) EcdsaPrivateKey() interface{} {
 	return k.PrivateKey
 }
 
@@ -114,11 +114,11 @@ func (k *secp256k1PubKey) HexString() string {
 }
 
 // EcdsaPublicKey returns the embedded ecdsa publick key
-func (k *secp256k1PubKey) EcdsaPublicKey() *ecdsa.PublicKey {
+func (k *secp256k1PubKey) EcdsaPublicKey() interface{} {
 	return k.PublicKey
 }
 
-// Hash is the last 20-byte of keccak hash of public key bytes, same as Ethereum address generation
+// Hash is the last 20-byte of keccak hash of public key (X, Y) co-ordinate, same as Ethereum address generation
 func (k *secp256k1PubKey) Hash() []byte {
 	h := hash.Hash160b(k.Bytes()[1:])
 	return h[:]
