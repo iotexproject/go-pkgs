@@ -10,8 +10,10 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/pem"
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/dustinxie/gmsm/sm2"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -63,6 +65,42 @@ func ReadPublicKeyFromPem(file string, pwd string) (PublicKey, error) {
 	return &P256sm2PubKey{
 		PublicKey: pk,
 	}, nil
+}
+
+// UpdatePrivateKeyPasswordToPem updates private key's password for PEM file
+func UpdatePrivateKeyPasswordToPem(fileName string, oldPwd string, newPwd string) error {
+	key, err := sm2.ReadPrivateKeyFromPem(fileName, []byte(oldPwd))
+	if err != nil {
+		return err
+	}
+
+	var block *pem.Block
+
+	der, err := sm2.MarshalSm2PrivateKey(key, []byte(newPwd))
+	if err != nil {
+		return err
+	}
+	if newPwd != "" {
+		block = &pem.Block{
+			Type:  "ENCRYPTED PRIVATE KEY",
+			Bytes: der,
+		}
+	} else {
+		block = &pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: der,
+		}
+	}
+	file, err := os.OpenFile(fileName, os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = pem.Encode(file, block)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //======================================
