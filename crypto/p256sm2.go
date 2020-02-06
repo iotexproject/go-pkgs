@@ -96,11 +96,8 @@ func UpdatePrivateKeyPasswordToPem(fileName string, oldPwd string, newPwd string
 		return err
 	}
 	defer file.Close()
-	err = pem.Encode(file, block)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return pem.Encode(file, block)
 }
 
 //======================================

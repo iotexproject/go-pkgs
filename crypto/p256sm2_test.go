@@ -50,10 +50,21 @@ func Test256sm2(t *testing.T) {
 	pk1, err = ReadPublicKeyFromPem("pk.pem", pwd)
 	require.NoError(err)
 	require.Equal(pk, pk1)
+
 	require.NoError(UpdatePrivateKeyPasswordToPem("sk.pem", pwd, pwd2))
 	_, err = ReadPrivateKeyFromPem("sk.pem", pwd)
 	require.Error(err)
 	sk2, err = ReadPrivateKeyFromPem("sk.pem", pwd2)
+	require.NoError(err)
+	require.Equal(sk, sk2)
+
+	require.Error(UpdatePrivateKeyPasswordToPem("sk.pem", pwd, ""))
+	require.NoError(UpdatePrivateKeyPasswordToPem("sk.pem", pwd2, ""))
+	_, err = ReadPrivateKeyFromPem("sk.pem", pwd)
+	require.Error(err)
+	_, err = ReadPrivateKeyFromPem("sk.pem", pwd2)
+	require.Error(err)
+	sk2, err = ReadPrivateKeyFromPem("sk.pem", "")
 	require.NoError(err)
 	require.Equal(sk, sk2)
 
