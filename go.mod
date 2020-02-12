@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190427004231-96897255fd17 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/dustinxie/gmsm v1.2.1-0.20200116070706-0cfe84befa85
+	github.com/dustinxie/gmsm v1.2.1-0.20200206225615-ad1978e2c91f
 	github.com/ethereum/go-ethereum v1.8.27
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef
