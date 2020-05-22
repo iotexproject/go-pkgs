@@ -41,11 +41,16 @@ func TestSecp256k1(t *testing.T) {
 	require.True(sig[secp256pubKeyLength-1] == 0 || sig[secp256pubKeyLength-1] == 1)
 	require.True(pk.Verify(h[:], sig))
 	for i := 0; i < len(sig)-1; i++ {
-		fsig := make([]byte, len(sig))
-		copy(fsig, sig)
-		fsig[i]--
-		require.False(pk.Verify(h[:], fsig))
+		sig[i]--
+		require.False(pk.Verify(h[:], sig))
+		sig[i]++
 	}
+	require.True(pk.Verify(h[:], sig))
+
+	// test recover pubkey
+	npk, err = RecoverPubkey(h[:], sig)
+	require.NoError(err)
+	require.Equal(pk, npk)
 
 	sig[secp256pubKeyLength-1] += 27
 	require.True(pk.Verify(h[:], sig))
