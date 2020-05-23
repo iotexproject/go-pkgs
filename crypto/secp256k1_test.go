@@ -8,6 +8,7 @@ package crypto
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -57,4 +58,14 @@ func TestSecp256k1(t *testing.T) {
 
 	sig[secp256pubKeyLength-1] = 2
 	require.False(pk.Verify(h[:], sig))
+
+	// test Ethereum signature with recovery id >= 27
+	ha, _ := hex.DecodeString("f93a97fae37fdadab6d49b74e3f3e4bee707ea2f007e08007bcc356cb283665b")
+	sig, _ = hex.DecodeString("5595906a47dfc107a78cc48b500f89ab2dec545ba86578295aed4a260ce9a98b335924e86f683832e313f1a5dda7826d9b59caf40dd22ce92716420a367dfaec1c")
+	require.EqualValues(28, sig[secp256pubKeyLength-1])
+	pk, err = RecoverPubkey(ha, sig)
+	require.NoError(err)
+	require.EqualValues(28, sig[secp256pubKeyLength-1])
+	require.Equal("53fbc28faf9a52dfe5f591948a23189e900381b5", hex.EncodeToString(pk.Hash()))
+
 }

@@ -128,9 +128,26 @@ func KeystoreToPrivateKey(account accounts.Account, password string) (PrivateKey
 
 // RecoverPubkey recovers the public key from signature
 func RecoverPubkey(msg, sig []byte) (PublicKey, error) {
-	if pk, err := secp256k1.RecoverPubkey(msg, sig); err == nil {
-		return newSecp256k1PubKeyFromBytes(pk)
+	if pk, err := recoverSecp256k1(msg, sig); err == nil {
+		return pk, nil
 	}
 	// TODO: implement recover key for sm2
 	return nil, ErrInvalidKey
+}
+
+func recoverSecp256k1(msg, sig []byte) (PublicKey, error) {
+	if len(sig) >= secp256pubKeyLength && sig[secp256pubKeyLength-1] >= 27 {
+		// when an Ethereum signature is calculated, 27 is added to recovery id
+		// https://github.com/ethereum/go-ethereum/commit/b59c8399fbe42390a3d41e945d03b1f21c1a9b8d#diff-31c4aa3a4249d4755fc652d3e0087b98R226-R232
+		sig[secp256pubKeyLength-1] -= 27
+		defer func() {
+			sig[secp256pubKeyLength-1] += 27
+		}()
+	}
+
+	pk, err := secp256k1.RecoverPubkey(msg, sig)
+	if err != nil {
+		return nil, err
+	}
+	return newSecp256k1PubKeyFromBytes(pk)
 }
