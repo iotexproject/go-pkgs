@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/go-pkgs/hash"
@@ -126,16 +127,22 @@ func (k *secp256k1PubKey) Hash() []byte {
 
 // Verify verifies the signature
 func (k *secp256k1PubKey) Verify(hash, sig []byte) bool {
-	if len(sig) != secp256pubKeyLength {
+	if len(sig) != Secp256k1SigSizeWithRecID {
 		return false
 	}
 	// signature must be in the [R || S || V] format where V is 0 or 1
-	v := sig[secp256pubKeyLength-1]
+	v := sig[Secp256k1SigSize]
 	if v >= 27 {
 		v -= 27
 	}
 	if !(v == 0 || v == 1) {
 		return false
 	}
-	return crypto.VerifySignature(k.Bytes(), hash, sig[:len(sig)-1])
+	return crypto.VerifySignature(k.Bytes(), hash, sig[:Secp256k1SigSize])
+}
+
+// Address returns the address object
+func (k *secp256k1PubKey) Address() address.Address {
+	addr, _ := address.FromBytes(k.Hash())
+	return addr
 }

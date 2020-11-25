@@ -13,7 +13,17 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/pkg/errors"
+)
+
+// const
+const (
+	// 64-byte (r, s) format
+	Secp256k1SigSize = 64
+
+	// 65-byte (r, s, v) format, where v is the recovery id
+	Secp256k1SigSizeWithRecID = 65
 )
 
 const (
@@ -38,6 +48,7 @@ type (
 		EcdsaPublicKey() interface{}
 		Hash() []byte
 		Verify([]byte, []byte) bool
+		Address() address.Address
 	}
 	// PrivateKey represents a private key
 	PrivateKey interface {
@@ -60,8 +71,20 @@ func GenerateKeySm2() (PrivateKey, error) {
 	return newP256sm2PrvKey()
 }
 
+func has0xPrefix(s string) bool {
+	if len(s) > 1 {
+		if s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
+			return true
+		}
+	}
+	return false
+}
+
 // HexStringToPublicKey decodes a string to PublicKey
 func HexStringToPublicKey(pubKey string) (PublicKey, error) {
+	if has0xPrefix(pubKey) {
+		pubKey = pubKey[2:]
+	}
 	b, err := hex.DecodeString(pubKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode public key %s", pubKey)
@@ -71,6 +94,9 @@ func HexStringToPublicKey(pubKey string) (PublicKey, error) {
 
 // HexStringToPrivateKey decodes a string to PrivateKey
 func HexStringToPrivateKey(prvKey string) (PrivateKey, error) {
+	if has0xPrefix(prvKey) {
+		prvKey = prvKey[2:]
+	}
 	b, err := hex.DecodeString(prvKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode public key %s", prvKey)
@@ -136,12 +162,12 @@ func RecoverPubkey(msg, sig []byte) (PublicKey, error) {
 }
 
 func recoverSecp256k1(msg, sig []byte) (PublicKey, error) {
-	if len(sig) >= secp256pubKeyLength && sig[secp256pubKeyLength-1] >= 27 {
+	if len(sig) >= Secp256k1SigSizeWithRecID && sig[Secp256k1SigSize] >= 27 {
 		// when an Ethereum signature is calculated, 27 is added to recovery id
 		// https://github.com/ethereum/go-ethereum/commit/b59c8399fbe42390a3d41e945d03b1f21c1a9b8d#diff-31c4aa3a4249d4755fc652d3e0087b98R226-R232
-		sig[secp256pubKeyLength-1] -= 27
+		sig[Secp256k1SigSize] -= 27
 		defer func() {
-			sig[secp256pubKeyLength-1] += 27
+			sig[Secp256k1SigSize] += 27
 		}()
 	}
 

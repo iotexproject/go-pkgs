@@ -17,6 +17,7 @@ import (
 
 	"github.com/dustinxie/gmsm/sm2"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/go-pkgs/hash"
@@ -240,4 +241,10 @@ func (k *P256sm2PubKey) Hash() []byte {
 // Verify verifies the signature
 func (k *P256sm2PubKey) Verify(hash, sig []byte) bool {
 	return k.PublicKey.Verify(hash, sig)
+}
+
+// Address returns the address object
+func (k *P256sm2PubKey) Address() address.Address {
+	addr, _ := address.FromBytes(k.Hash())
+	return addr
 }
