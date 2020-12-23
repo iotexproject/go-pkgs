@@ -25,6 +25,7 @@ import (
 // Cache is an LRU cache. It is not safe for concurrent access.
 type Cache struct {
 	mutex sync.RWMutex
+
 	// MaxEntries is the maximum number of cache entries before
 	// an item is evicted. Zero means no limit.
 	MaxEntries int
@@ -58,12 +59,12 @@ func New(maxEntries int) *Cache {
 
 // Add adds a value to the cache.
 func (c *Cache) Add(key Key, value interface{}) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	if c.cache == nil {
 		c.cache = make(map[interface{}]*list.Element)
 		c.ll = list.New()
 	}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if ee, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ee)
 		ee.Value.(*entry).value = value
@@ -78,11 +79,11 @@ func (c *Cache) Add(key Key, value interface{}) {
 
 // Get looks up a key's value from the cache.
 func (c *Cache) Get(key Key) (value interface{}, ok bool) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	if c.cache == nil {
 		return
 	}
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	if ele, hit := c.cache[key]; hit {
 		c.ll.MoveToFront(ele)
 		return ele.Value.(*entry).value, true
@@ -92,14 +93,14 @@ func (c *Cache) Get(key Key) (value interface{}, ok bool) {
 
 // Remove removes the provided key from the cache.
 func (c *Cache) Remove(key Key) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	if c.cache == nil {
 		return
 	}
+	c.mutex.Lock()
 	if ele, hit := c.cache[key]; hit {
 		c.removeElement(ele)
 	}
+	c.mutex.Unlock()
 }
 
 // RemoveOldest removes the oldest item from the cache.
@@ -107,10 +108,12 @@ func (c *Cache) RemoveOldest() {
 	if c.cache == nil {
 		return
 	}
+	c.mutex.Lock()
 	ele := c.ll.Back()
 	if ele != nil {
 		c.removeElement(ele)
 	}
+	c.mutex.Unlock()
 }
 
 func (c *Cache) removeElement(e *list.Element) {
@@ -124,12 +127,13 @@ func (c *Cache) removeElement(e *list.Element) {
 
 // Len returns the number of items in the cache.
 func (c *Cache) Len() int {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
 	if c.cache == nil {
 		return 0
 	}
-	return c.ll.Len()
+	c.mutex.RLock()
+	length := c.ll.Len()
+	c.mutex.RUnlock()
+	return length
 }
 
 // Clear purges all stored items from the cache.
@@ -148,8 +152,6 @@ func (c *Cache) Clear() {
 
 // Range call f on every key
 func (c *Cache) Range(f func(key Key, value interface{}) bool) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	for _, e := range c.cache {
 		kv := e.Value.(*entry)
 		if !f(kv.key, kv.value) {
