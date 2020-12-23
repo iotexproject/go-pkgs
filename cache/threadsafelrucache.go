@@ -9,7 +9,7 @@ package cache
 import (
 	"sync"
 
-	"github.com/golang/groupcache/lru"
+	"github.com/iotexproject/go-pkgs/cache/lru"
 )
 
 // ThreadSafeLruCache defines a lru cache which is thread safe
@@ -22,6 +22,15 @@ type ThreadSafeLruCache struct {
 func NewThreadSafeLruCache(maxEntries int) *ThreadSafeLruCache {
 	return &ThreadSafeLruCache{
 		cache: lru.New(maxEntries),
+	}
+}
+
+// NewThreadSafeLruCacheWithOnEvicted returns a thread safe lru cache with fix size
+func NewThreadSafeLruCacheWithOnEvicted(maxEntries int, onEvicted func(key lru.Key, value interface{})) *ThreadSafeLruCache {
+	cache := lru.New(maxEntries)
+	cache.OnEvicted = onEvicted
+	return &ThreadSafeLruCache{
+		cache: cache,
 	}
 }
 
@@ -65,4 +74,16 @@ func (c *ThreadSafeLruCache) Clear() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.cache.Clear()
+}
+
+// Range all stored items from the cache.
+func (c *ThreadSafeLruCache) Range(f func(key lru.Key) bool) {
+	c.mutex.RLock()
+	keys := c.cache.Keys()
+	c.mutex.RUnlock()
+	for _, k := range keys {
+		if !f(k) {
+			break
+		}
+	}
 }
