@@ -96,14 +96,16 @@ func TestEvict(t *testing.T) {
 	}
 }
 
-func TestKeys(t *testing.T) {
+func TestRange(t *testing.T) {
 	lru := New(20)
 	for i := 0; i < 22; i++ {
 		lru.Add(fmt.Sprintf("myKey%d", i), 1234)
 	}
 
-	keys := lru.Keys()
-	if lru.Len() != len(keys) {
-		t.Fatalf("got %d ", lru.Len())
-	}
+	lru.Range(func(key Key, val interface{}) bool {
+		if val != 1234 {
+			t.Fatalf("TestRange failed.  Expected %d, got %v", 1234, val)
+		}
+		return true
+	})
 }

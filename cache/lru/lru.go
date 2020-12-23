@@ -17,10 +17,14 @@ limitations under the License.
 // Package lru implements an LRU cache.
 package lru
 
-import "container/list"
+import (
+	"container/list"
+	"sync"
+)
 
 // Cache is an LRU cache. It is not safe for concurrent access.
 type Cache struct {
+	mutex sync.RWMutex
 	// MaxEntries is the maximum number of cache entries before
 	// an item is evicted. Zero means no limit.
 	MaxEntries int
@@ -54,6 +58,8 @@ func New(maxEntries int) *Cache {
 
 // Add adds a value to the cache.
 func (c *Cache) Add(key Key, value interface{}) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.cache == nil {
 		c.cache = make(map[interface{}]*list.Element)
 		c.ll = list.New()
@@ -72,6 +78,8 @@ func (c *Cache) Add(key Key, value interface{}) {
 
 // Get looks up a key's value from the cache.
 func (c *Cache) Get(key Key) (value interface{}, ok bool) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.cache == nil {
 		return
 	}
@@ -84,6 +92,8 @@ func (c *Cache) Get(key Key) (value interface{}, ok bool) {
 
 // Remove removes the provided key from the cache.
 func (c *Cache) Remove(key Key) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.cache == nil {
 		return
 	}
@@ -114,6 +124,8 @@ func (c *Cache) removeElement(e *list.Element) {
 
 // Len returns the number of items in the cache.
 func (c *Cache) Len() int {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	if c.cache == nil {
 		return 0
 	}
@@ -122,6 +134,8 @@ func (c *Cache) Len() int {
 
 // Clear purges all stored items from the cache.
 func (c *Cache) Clear() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.OnEvicted != nil {
 		for _, e := range c.cache {
 			kv := e.Value.(*entry)
@@ -132,13 +146,14 @@ func (c *Cache) Clear() {
 	c.cache = nil
 }
 
-// Keys returns a slice of the keys in the cache, from oldest to newest.
-func (c *Cache) Keys() []interface{} {
-	keys := make([]interface{}, len(c.cache))
-	i := 0
-	for ent := c.ll.Back(); ent != nil; ent = ent.Prev() {
-		keys[i] = ent.Value.(*entry).key
-		i++
+// Range call f on every key
+func (c *Cache) Range(f func(key Key, value interface{}) bool) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	for _, e := range c.cache {
+		kv := e.Value.(*entry)
+		if !f(kv.key, kv.value) {
+			break
+		}
 	}
-	return keys
 }
