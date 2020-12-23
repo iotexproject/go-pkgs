@@ -10,23 +10,17 @@ import (
 	"github.com/iotexproject/go-pkgs/cache/lru"
 )
 
-// ThreadSafeLruCache defines a lru cache which is thread safe
-type ThreadSafeLruCache struct {
-	*lru.Cache
-}
+// ThreadSafeLruCache is an alias of lru.Cache
+type ThreadSafeLruCache = lru.Cache
 
 // NewThreadSafeLruCache returns a thread safe lru cache with fix size
 func NewThreadSafeLruCache(maxEntries int) *ThreadSafeLruCache {
-	return &ThreadSafeLruCache{
-		lru.New(maxEntries),
-	}
+	return lru.New(maxEntries)
 }
 
 // NewThreadSafeLruCacheWithOnEvicted returns a thread safe lru cache with fix size
 func NewThreadSafeLruCacheWithOnEvicted(maxEntries int, onEvicted func(key lru.Key, value interface{})) *ThreadSafeLruCache {
 	cache := lru.New(maxEntries)
 	cache.OnEvicted = onEvicted
-	return &ThreadSafeLruCache{
-		cache,
-	}
+	return cache
 }
