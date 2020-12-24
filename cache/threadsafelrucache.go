@@ -13,13 +13,16 @@ import (
 // ThreadSafeLruCache is an alias of lru.Cache
 type ThreadSafeLruCache = lru.Cache
 
+// Key is an alias of lru.Key
+type Key = lru.Key
+
 // NewThreadSafeLruCache returns a thread safe lru cache with fix size
 func NewThreadSafeLruCache(maxEntries int) *ThreadSafeLruCache {
 	return lru.New(maxEntries)
 }
 
 // NewThreadSafeLruCacheWithOnEvicted returns a thread safe lru cache with fix size
-func NewThreadSafeLruCacheWithOnEvicted(maxEntries int, onEvicted func(key lru.Key, value interface{})) *ThreadSafeLruCache {
+func NewThreadSafeLruCacheWithOnEvicted(maxEntries int, onEvicted func(key Key, value interface{})) *ThreadSafeLruCache {
 	cache := lru.New(maxEntries)
 	cache.OnEvicted = onEvicted
 	return cache
