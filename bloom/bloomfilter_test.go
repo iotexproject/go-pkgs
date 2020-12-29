@@ -7,44 +7,51 @@
 package bloom
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"encoding/binary"
 	"testing"
 
-	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewBloomFilter(t *testing.T) {
+func TestBloomFilter(t *testing.T) {
 	require := require.New(t)
 
-	f, err := NewBloomFilter(1024, 3)
-	require.Error(err)
-	require.Nil(f)
-	f, err = NewBloomFilter(2048, 17)
-	require.Error(err)
-	require.Nil(f)
-}
-
-func TestBloomFilterFromBytes(t *testing.T) {
-	require := require.New(t)
-
-	f, err := BloomFilterFromBytes(hash.ZeroHash256[:], 1024, 3)
-	require.Error(err)
-	require.Nil(f)
-	f, err = BloomFilterFromBytes(hash.ZeroHash256[:], 2048, 17)
-	require.Error(err)
-	require.Nil(f)
-	f, err = BloomFilterFromBytes(hash.ZeroHash256[:], 2048, 3)
-	require.Error(err)
-	require.Nil(f)
-
-	// construct 256-byte slice
-	var k [256]byte
-	for i := 0; i < 128; i++ {
-		r := rand.Intn(256)
-		k[r] = byte(256 - r)
-	}
-	f, err = BloomFilterFromBytes(k[:], 2048, 3)
+	f1, err := newBloom2048(3)
 	require.NoError(err)
-	require.Equal(k[:], f.Bytes())
+	f2, err := newBloomMbits(256, 4)
+	require.NoError(err)
+	f3, err := newBloomMbits(2048, 3)
+	require.NoError(err)
+	f4, err := newBloomMbits(500000, 5)
+	require.NoError(err)
+
+	for _, f := range []BloomFilter{
+		f1, f2, f3, f4,
+	} {
+		// insert 1/8 capacity
+		count := f.Size() >> 3
+		var key [][]byte
+		for i := uint64(0); i < count; i++ {
+			k := make([]byte, 8)
+			require.NoError(binary.Read(rand.Reader, binary.BigEndian, k))
+			f.Add(k)
+			key = append(key, k)
+		}
+
+		// verify keys exist
+		for _, k := range key {
+			require.True(f.Exist(k[:]))
+		}
+
+		// empty key does not exist
+		require.False(f.Exist(nil))
+
+		// random keys should not exist
+		for i := 0; i < 2; i++ {
+			k := make([]byte, 8)
+			require.NoError(binary.Read(rand.Reader, binary.BigEndian, k))
+			require.False(f.Exist(k[:]))
+		}
+	}
 }

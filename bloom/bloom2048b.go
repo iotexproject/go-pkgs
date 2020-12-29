@@ -40,6 +40,22 @@ func bloom2048FromBytes(b []byte, h uint) (BloomFilter, error) {
 	return &f, nil
 }
 
+// Size of bloom filter in bits
+func (b *bloom2048b) Size() uint64 {
+	return 2048
+}
+
+// NumHash is the number of hash functions used
+func (b *bloom2048b) NumHash() uint64 {
+	return uint64(b.numHash)
+}
+
+// NumElements is the number of elements in the bloom filter
+func (b *bloom2048b) NumElements() uint64 {
+	// this is new API, does not apply to 2048-bit
+	return 0
+}
+
 // Add 32-byte key into bloom filter
 func (f *bloom2048b) Add(key []byte) {
 	if key == nil {

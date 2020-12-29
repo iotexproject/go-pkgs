@@ -1,4 +1,4 @@
-// Copyright (c) 2019 IoTeX
+// Copyright (c) 2020 IoTeX
 // This is an alpha (internal) release and is not suitable for production. This source code is provided 'as is' and no
 // warranties are given as to title or non-infringement, merchantability or fitness for purpose and, to the extent
 // permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
@@ -10,36 +10,51 @@ import (
 	"encoding/binary"
 )
 
-var machineEndian = binary.LittleEndian
-
-// Uint32ToBytes converts a uint32 to 4 bytes with the machine endian
+// Uint32ToBytes converts a uint32 to 4 bytes in little-endian
 func Uint32ToBytes(value uint32) []byte {
 	bytes := make([]byte, 4)
-	machineEndian.PutUint32(bytes, value)
+	binary.LittleEndian.PutUint32(bytes, value)
 	return bytes
 }
 
-// Uint64ToBytes converts a uint64 to 8 bytes with the machine endian
+// Uint64ToBytes converts a uint64 to 8 bytes in little-endian
 func Uint64ToBytes(value uint64) []byte {
 	bytes := make([]byte, 8)
-	machineEndian.PutUint64(bytes, value)
+	binary.LittleEndian.PutUint64(bytes, value)
 	return bytes
 }
 
-// BytesToUint32 converts 4 bytes to uint32 with the machine endian
-func BytesToUint32(value []byte) uint32 {
-	return machineEndian.Uint32(value)
-}
-
-// BytesToUint64 converts 8 bytes to uint64 with the machine endian
+// BytesToUint64 converts 8 bytes to uint64 in little-endian
 func BytesToUint64(value []byte) uint64 {
-	return machineEndian.Uint64(value)
+	return binary.LittleEndian.Uint64(value)
 }
 
-// Must is a helper wraps a call to a function returing ([]byte, error) and panics if the error is not nil.
+// Must is a helper wraps a call to a function returning ([]byte, error) and panics if the error is not nil.
 func Must(d []byte, err error) []byte {
 	if err != nil {
 		panic(err)
 	}
 	return d
+}
+
+// convert number sequence 0, 1, 2, ... n to big-endian results in byte-sorted []byte slice
+// we leverage this nice property to search/iterate action index stored within a bucket
+
+// Uint32ToBytesBigEndian converts a uint32 to 4 bytes in big-endian
+func Uint32ToBytesBigEndian(value uint32) []byte {
+	bytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(bytes, value)
+	return bytes
+}
+
+// Uint64ToBytesBigEndian converts a uint64 to 8 bytes in big-endian
+func Uint64ToBytesBigEndian(value uint64) []byte {
+	bytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(bytes, value)
+	return bytes
+}
+
+// BytesToUint64BigEndian converts 8 bytes to uint64 in big-endian
+func BytesToUint64BigEndian(value []byte) uint64 {
+	return binary.BigEndian.Uint64(value)
 }

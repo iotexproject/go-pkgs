@@ -8,41 +8,10 @@ package bloom
 
 import (
 	"math/rand"
-	"strconv"
 	"testing"
 
-	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/stretchr/testify/require"
 )
-
-func TestBloom2048b_Add(t *testing.T) {
-	require := require.New(t)
-
-	f, err := newBloom2048(3)
-	require.NoError(err)
-	var key []hash.Hash256
-	for i := 0; i < 50; i++ {
-		r := strconv.FormatInt(rand.Int63(), 10)
-		k := hash.Hash256b([]byte(r))
-		f.Add(k[:])
-		key = append(key, k)
-	}
-
-	// 50 keys exist
-	for _, k := range key {
-		require.True(f.Exist(k[:]))
-	}
-
-	// empty key does not exist
-	require.False(f.Exist(nil))
-
-	// random keys should not exist
-	for i := 0; i < 100; i++ {
-		r := strconv.FormatInt(rand.Int63(), 10)
-		k := hash.Hash256b([]byte(r))
-		require.False(f.Exist(k[:]))
-	}
-}
 
 func TestBloom2048b_setBit(t *testing.T) {
 	require := require.New(t)
