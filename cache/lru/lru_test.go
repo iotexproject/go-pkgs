@@ -55,6 +55,9 @@ func TestGet(t *testing.T) {
 		} else if ok && val != 1234 {
 			t.Fatalf("%s expected get to return 1234 but got %v", tt.name, val)
 		}
+		if tt.expectedOk && lru.AddNX(tt.keyToGet, 1234) {
+			t.Fatalf("%s: AddNX = true; want false", tt.name)
+		}
 	}
 }
 
@@ -108,4 +111,32 @@ func TestRange(t *testing.T) {
 		}
 		return true
 	})
+}
+
+func TestClear(t *testing.T) {
+	lru := New(20)
+	if lru.Len() != 0 {
+		t.Fatalf("TestLen failed. Expected 0, got %d", lru.Len())
+	}
+	if !lru.AddNX("myKey0", 1234) {
+		t.Fatalf("AddNX = true; want false")
+	}
+	if lru.Len() != 1 {
+		t.Fatalf("TestLen failed. Expected 1, got %d", lru.Len())
+	}
+
+	lru.Clear()
+	if lru.Len() != 0 {
+		t.Fatalf("TestLen failed. Expected 0, got %d", lru.Len())
+	}
+	if !lru.AddNX("myKey0", 1234) {
+		t.Fatalf("AddNX = true; want false")
+	}
+	v, ok := lru.Get("myKey0")
+	if !ok {
+		t.Fatalf("Get() = false; want true")
+	}
+	if v != 1234 {
+		t.Fatalf("expected get to return 1234 but got %v", v)
+	}
 }

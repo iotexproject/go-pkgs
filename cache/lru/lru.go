@@ -59,10 +59,6 @@ func New(maxEntries int) *Cache {
 
 // Add adds a value to the cache.
 func (c *Cache) Add(key Key, value interface{}) {
-	if c.cache == nil {
-		c.cache = make(map[interface{}]*list.Element)
-		c.ll = list.New()
-	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if ee, ok := c.cache[key]; ok {
@@ -81,11 +77,28 @@ func (c *Cache) Add(key Key, value interface{}) {
 	}
 }
 
+// AddNX adds a value to the cache, only when the key does not exist yet.
+func (c *Cache) AddNX(key Key, value interface{}) bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if _, ok := c.cache[key]; ok {
+		// key already exist, do nothing
+		return false
+	}
+	ele := c.ll.PushFront(&entry{key, value})
+	c.cache[key] = ele
+	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries {
+		// removes the oldest item from the cache
+		ele := c.ll.Back()
+		if ele != nil {
+			c.removeElement(ele)
+		}
+	}
+	return true
+}
+
 // Get looks up a key's value from the cache.
 func (c *Cache) Get(key Key) (value interface{}, ok bool) {
-	if c.cache == nil {
-		return
-	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if ele, hit := c.cache[key]; hit {
@@ -97,9 +110,6 @@ func (c *Cache) Get(key Key) (value interface{}, ok bool) {
 
 // Remove removes the provided key from the cache.
 func (c *Cache) Remove(key Key) {
-	if c.cache == nil {
-		return
-	}
 	c.mutex.Lock()
 	if ele, hit := c.cache[key]; hit {
 		c.removeElement(ele)
@@ -109,9 +119,6 @@ func (c *Cache) Remove(key Key) {
 
 // RemoveOldest removes the oldest item from the cache.
 func (c *Cache) RemoveOldest() {
-	if c.cache == nil {
-		return
-	}
 	c.mutex.Lock()
 	ele := c.ll.Back()
 	if ele != nil {
@@ -131,9 +138,6 @@ func (c *Cache) removeElement(e *list.Element) {
 
 // Len returns the number of items in the cache.
 func (c *Cache) Len() int {
-	if c.cache == nil {
-		return 0
-	}
 	c.mutex.RLock()
 	length := c.ll.Len()
 	c.mutex.RUnlock()
@@ -152,6 +156,8 @@ func (c *Cache) Clear() {
 	}
 	c.ll = nil
 	c.cache = nil
+	c.ll = list.New()
+	c.cache = make(map[interface{}]*list.Element)
 }
 
 // Range call f on every key
