@@ -81,6 +81,7 @@ func (cache *Cache) cleanup() {
 	cache.mutex.Unlock()
 }
 
+// Delete removes existing item in the cache
 func (cache *Cache) Delete(key string) (isSucceed bool) {
 	cache.mutex.Lock()
 	if _, exist := cache.items[key]; !exist {
