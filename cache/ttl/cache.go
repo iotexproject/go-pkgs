@@ -87,6 +87,7 @@ func (cache *Cache) Delete(key string) (isSucceed bool) {
 	if _, exist := cache.items[key]; !exist {
 		cache.mutex.Unlock()
 		isSucceed = false
+		return
 	}
 	delete(cache.items, key)
 	cache.mutex.Unlock()
