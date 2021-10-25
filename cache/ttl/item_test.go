@@ -11,14 +11,12 @@ func TestExpired(t *testing.T) {
 		t.Errorf("Expected item to be expired by default")
 	}
 
-	expiration := time.Now().Add(time.Second)
-	item.expires = &expiration
+	item.expires = time.Now().Add(time.Second)
 	if item.expired() {
 		t.Errorf("Expected item to not be expired")
 	}
 
-	expiration = time.Now().Add(0 - time.Second)
-	item.expires = &expiration
+	item.expires = time.Now().Add(0 - time.Second)
 	if !item.expired() {
 		t.Errorf("Expected item to be expired once time has passed")
 	}
