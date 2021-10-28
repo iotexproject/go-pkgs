@@ -25,27 +25,19 @@ SOFTWARE.
 package ttlcache
 
 import (
-	"sync"
 	"time"
 )
 
 // Item represents a record in the cache map
 type Item struct {
-	sync.RWMutex
 	data    interface{}
 	expires time.Time
 }
 
-func (item *Item) touch(duration time.Duration) {
-	item.Lock()
+func (item *Item) AddTimeout(duration time.Duration) {
 	item.expires = time.Now().Add(duration)
-	item.Unlock()
 }
 
 func (item *Item) expired() bool {
-	var value bool
-	item.RLock()
-	value = item.expires.Before(time.Now())
-	item.RUnlock()
-	return value
+	return item.expires.Before(time.Now())
 }

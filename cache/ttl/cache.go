@@ -36,17 +36,30 @@ type Cache struct {
 	items map[string]*Item
 }
 
+// NewCache is a helper to create instance of the Cache struct
+func NewCache(duration time.Duration) *Cache {
+	if duration <= 0 {
+		return nil
+	}
+	cache := &Cache{
+		ttl:   duration,
+		items: map[string]*Item{},
+	}
+	cache.startCleanupTimer()
+	return cache
+}
+
 // Set is a thread-safe way to add new items to the map
 func (cache *Cache) Set(key string, data interface{}) {
 	cache.mutex.Lock()
 	item := &Item{data: data}
-	item.touch(cache.ttl)
+	item.AddTimeout(cache.ttl)
 	cache.items[key] = item
 	cache.mutex.Unlock()
 }
 
 // Get is a thread-safe way to lookup items
-// Every lookup, also touches the item, hence extending it's life
+// Every lookup, also add the timeout of the item, hence extending it's life
 func (cache *Cache) Get(key string) (interface{}, bool) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
@@ -54,7 +67,7 @@ func (cache *Cache) Get(key string) (interface{}, bool) {
 	if !exists || item.expired() {
 		return "", false
 	}
-	item.touch(cache.ttl)
+	item.AddTimeout(cache.ttl)
 	return item.data, true
 }
 
@@ -89,11 +102,7 @@ func (cache *Cache) Delete(key string) bool {
 }
 
 func (cache *Cache) startCleanupTimer() {
-	duration := cache.ttl
-	if duration < time.Second {
-		duration = time.Second
-	}
-	ticker := time.Tick(duration)
+	ticker := time.Tick(cache.ttl)
 	go (func() {
 		for {
 			select {
@@ -102,14 +111,4 @@ func (cache *Cache) startCleanupTimer() {
 			}
 		}
 	})()
-}
-
-// NewCache is a helper to create instance of the Cache struct
-func NewCache(duration time.Duration) *Cache {
-	cache := &Cache{
-		ttl:   duration,
-		items: map[string]*Item{},
-	}
-	cache.startCleanupTimer()
-	return cache
 }

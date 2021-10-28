@@ -22,9 +22,9 @@ func TestExpired(t *testing.T) {
 	}
 }
 
-func TestTouch(t *testing.T) {
+func TestAddTimeout(t *testing.T) {
 	item := &Item{data: "blahblah"}
-	item.touch(time.Second)
+	item.AddTimeout(time.Second)
 	if item.expired() {
 		t.Errorf("Expected item to not be expired once touched")
 	}
