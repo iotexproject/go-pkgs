@@ -36,13 +36,22 @@ type Cache struct {
 	items map[string]*Item
 }
 
-// NewCache is a helper to create instance of the Cache struct
-func NewCache(duration time.Duration) *Cache {
-	if duration <= 0 {
+// NewCache creates a instance of the Cache struct. Argument duration
+// stands for the existing time of item in the cache. When no argument
+// is passed, the item will persistently existed in the cache.
+func NewCache(duration ...time.Duration) *Cache {
+	if len(duration) == 0 {
+		return &Cache{
+			ttl:   0,
+			items: map[string]*Item{},
+		}
+	}
+
+	if len(duration) > 1 || duration[0] <= 0 {
 		return nil
 	}
 	cache := &Cache{
-		ttl:   duration,
+		ttl:   duration[0],
 		items: map[string]*Item{},
 	}
 	cache.startCleanupTimer()
