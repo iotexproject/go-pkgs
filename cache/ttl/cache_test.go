@@ -60,7 +60,7 @@ func TestExpiration(t *testing.T) {
 
 	<-time.After(500 * time.Millisecond)
 	cache.mutex.Lock()
-	cache.items["y"].AddTimeout(time.Second)
+	cache.items["y"].addTimeout(time.Second)
 	item, exists := cache.items["x"]
 	cache.mutex.Unlock()
 	if !exists || item.data != "1" || item.expired() {
@@ -100,4 +100,23 @@ func TestExpiration(t *testing.T) {
 	if count != 0 {
 		t.Errorf("Expected cache to be empty")
 	}
+}
+
+func TestReset(t *testing.T) {
+	require := require.New(t)
+	cache := &Cache{
+		ttl:   time.Second,
+		items: map[string]*Item{},
+	}
+
+	cache.Set("hello", "world")
+	data, exists := cache.Get("hello")
+	require.True(exists)
+	require.Equal(data, "world")
+
+	cache.Reset()
+	data, exists = cache.Get("hello")
+	require.False(exists)
+	require.Empty(data)
+	require.Equal(cache.Count(), 0)
 }

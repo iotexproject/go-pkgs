@@ -53,7 +53,7 @@ func NewCache(duration time.Duration) *Cache {
 func (cache *Cache) Set(key string, data interface{}) {
 	cache.mutex.Lock()
 	item := &Item{data: data}
-	item.AddTimeout(cache.ttl)
+	item.addTimeout(cache.ttl)
 	cache.items[key] = item
 	cache.mutex.Unlock()
 }
@@ -67,7 +67,7 @@ func (cache *Cache) Get(key string) (interface{}, bool) {
 	if !exists || item.expired() {
 		return "", false
 	}
-	item.AddTimeout(cache.ttl)
+	item.addTimeout(cache.ttl)
 	return item.data, true
 }
 
@@ -80,16 +80,6 @@ func (cache *Cache) Count() int {
 	return count
 }
 
-func (cache *Cache) cleanup() {
-	cache.mutex.Lock()
-	for key, item := range cache.items {
-		if item.expired() {
-			delete(cache.items, key)
-		}
-	}
-	cache.mutex.Unlock()
-}
-
 // Delete removes existing item in the cache
 func (cache *Cache) Delete(key string) bool {
 	cache.mutex.Lock()
@@ -99,6 +89,24 @@ func (cache *Cache) Delete(key string) bool {
 	}
 	delete(cache.items, key)
 	return true
+}
+
+// Reset empties the cache
+func (cache *Cache) Reset() {
+	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+	cache.items = make(map[string]*Item)
+	cache.ttl = 0
+}
+
+func (cache *Cache) cleanup() {
+	cache.mutex.Lock()
+	for key, item := range cache.items {
+		if item.expired() {
+			delete(cache.items, key)
+		}
+	}
+	cache.mutex.Unlock()
 }
 
 func (cache *Cache) startCleanupTimer() {

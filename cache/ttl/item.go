@@ -34,7 +34,7 @@ type Item struct {
 	expires time.Time
 }
 
-func (item *Item) AddTimeout(duration time.Duration) {
+func (item *Item) addTimeout(duration time.Duration) {
 	item.expires = time.Now().Add(duration)
 }
 
