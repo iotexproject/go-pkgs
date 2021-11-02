@@ -41,7 +41,7 @@ func TestNoExpiration(t *testing.T) {
 	cache := NewCache()
 
 	cache.Set("x", "1")
-	require.Equal(3, cache.Count())
+	require.Equal(1, cache.Count())
 
 	<-time.After(time.Second * 2)
 	_, exist := cache.Get("x")
