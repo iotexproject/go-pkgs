@@ -9,10 +9,7 @@ import (
 
 func TestGet(t *testing.T) {
 	require := require.New(t)
-	cache := &Cache{
-		ttl:   time.Second,
-		items: map[string]*Item{},
-	}
+	cache := NewCache(AutoExpireOption(time.Minute))
 
 	data, exists := cache.Get("hello")
 	require.False(exists)
@@ -26,10 +23,7 @@ func TestGet(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	require := require.New(t)
-	cache := &Cache{
-		ttl:   time.Second,
-		items: map[string]*Item{},
-	}
+	cache := NewCache(AutoExpireOption(time.Minute))
 
 	cache.Set("hello", "world")
 	data, exists := cache.Get("hello")
@@ -42,11 +36,20 @@ func TestDelete(t *testing.T) {
 	require.Empty(data)
 }
 
+func TestNoExpiration(t *testing.T) {
+	require := require.New(t)
+	cache := NewCache()
+
+	cache.Set("x", "1")
+	require.Equal(3, cache.Count())
+
+	<-time.After(time.Second * 2)
+	_, exist := cache.Get("x")
+	require.True(exist)
+
+}
 func TestExpiration(t *testing.T) {
-	cache := &Cache{
-		ttl:   time.Second,
-		items: map[string]*Item{},
-	}
+	cache := NewCache(AutoExpireOption(time.Second))
 
 	cache.Set("x", "1")
 	cache.Set("y", "z")
@@ -104,10 +107,7 @@ func TestExpiration(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	require := require.New(t)
-	cache := &Cache{
-		ttl:   time.Second,
-		items: map[string]*Item{},
-	}
+	cache := NewCache(AutoExpireOption(time.Minute))
 
 	cache.Set("hello", "world")
 	data, exists := cache.Get("hello")

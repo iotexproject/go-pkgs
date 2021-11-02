@@ -32,52 +32,59 @@ import (
 // Cache is a synchronised map of items that auto-expire once stale
 type Cache struct {
 	mutex sync.RWMutex
-	ttl   time.Duration
 	items map[string]*Item
+	ttl   *time.Duration
 }
 
 // NewCache creates a instance of the Cache struct. Argument duration
 // stands for the existing time of item in the cache. When no argument
 // is passed, the item will persistently existed in the cache.
-func NewCache(duration ...time.Duration) *Cache {
-	if len(duration) == 0 {
-		return &Cache{
-			ttl:   0,
-			items: map[string]*Item{},
-		}
-	}
-
-	if len(duration) > 1 || duration[0] <= 0 {
-		return nil
-	}
+func NewCache(opts ...Option) *Cache {
 	cache := &Cache{
-		ttl:   duration[0],
 		items: map[string]*Item{},
 	}
-	cache.startCleanupTimer()
+	for _, opt := range opts {
+		opt(cache)
+	}
+	if hasAutoExpire(cache) {
+		cache.startCleanupTimer()
+	}
 	return cache
 }
 
 // Set is a thread-safe way to add new items to the map
 func (cache *Cache) Set(key string, data interface{}) {
 	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
 	item := &Item{data: data}
-	item.addTimeout(cache.ttl)
+	if hasAutoExpire(cache) {
+		item.addTimeout(*cache.ttl)
+	}
 	cache.items[key] = item
-	cache.mutex.Unlock()
 }
 
 // Get is a thread-safe way to lookup items
 // Every lookup, also add the timeout of the item, hence extending it's life
 func (cache *Cache) Get(key string) (interface{}, bool) {
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
-	item, exists := cache.items[key]
-	if !exists || item.expired() {
-		return "", false
+	switch {
+	case hasAutoExpire(cache):
+		cache.mutex.Lock()
+		defer cache.mutex.Unlock()
+		item, exists := cache.items[key]
+		if !exists || item.expired() {
+			return "", false
+		}
+		item.addTimeout(*cache.ttl)
+		return item.data, true
+	default:
+		cache.mutex.RLock()
+		defer cache.mutex.RUnlock()
+		item, exists := cache.items[key]
+		if !exists {
+			return "", false
+		}
+		return item.data, true
 	}
-	item.addTimeout(cache.ttl)
-	return item.data, true
 }
 
 // Count returns the number of items in the cache
@@ -105,7 +112,7 @@ func (cache *Cache) Reset() {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	cache.items = make(map[string]*Item)
-	cache.ttl = 0
+	cache.ttl = nil
 }
 
 func (cache *Cache) cleanup() {
@@ -119,7 +126,7 @@ func (cache *Cache) cleanup() {
 }
 
 func (cache *Cache) startCleanupTimer() {
-	ticker := time.Tick(cache.ttl)
+	ticker := time.Tick(*cache.ttl)
 	go (func() {
 		for {
 			select {
@@ -128,4 +135,17 @@ func (cache *Cache) startCleanupTimer() {
 			}
 		}
 	})()
+}
+
+type Option func(*Cache) error
+
+func AutoExpireOption(ttl time.Duration) Option {
+	return func(cache *Cache) error {
+		cache.ttl = &ttl
+		return nil
+	}
+}
+
+func hasAutoExpire(cache *Cache) bool {
+	return cache.ttl != nil
 }
