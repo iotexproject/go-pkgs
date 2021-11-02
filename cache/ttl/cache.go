@@ -25,6 +25,7 @@ SOFTWARE.
 package ttlcache
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -33,23 +34,25 @@ import (
 type Cache struct {
 	mutex sync.RWMutex
 	items map[string]*Item
-	ttl   *time.Duration
+	ttl   time.Duration
 }
 
 // NewCache creates a instance of the Cache struct. Argument duration
 // stands for the existing time of item in the cache. When no argument
 // is passed, the item will persistently existed in the cache.
-func NewCache(opts ...Option) *Cache {
+func NewCache(opts ...Option) (*Cache, error) {
 	cache := &Cache{
 		items: map[string]*Item{},
 	}
 	for _, opt := range opts {
-		opt(cache)
+		if err := opt(cache); err != nil {
+			return nil, err
+		}
 	}
-	if hasAutoExpire(cache) {
+	if cache.hasAutoExpire() {
 		cache.startCleanupTimer()
 	}
-	return cache
+	return cache, nil
 }
 
 // Set is a thread-safe way to add new items to the map
@@ -57,8 +60,8 @@ func (cache *Cache) Set(key string, data interface{}) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	item := &Item{data: data}
-	if hasAutoExpire(cache) {
-		item.addTimeout(*cache.ttl)
+	if cache.hasAutoExpire() {
+		item.addTimeout(cache.ttl)
 	}
 	cache.items[key] = item
 }
@@ -67,21 +70,21 @@ func (cache *Cache) Set(key string, data interface{}) {
 // Every lookup, also add the timeout of the item, hence extending it's life
 func (cache *Cache) Get(key string) (interface{}, bool) {
 	switch {
-	case hasAutoExpire(cache):
+	case cache.hasAutoExpire():
 		cache.mutex.Lock()
 		defer cache.mutex.Unlock()
 		item, exists := cache.items[key]
 		if !exists || item.expired() {
-			return "", false
+			return nil, false
 		}
-		item.addTimeout(*cache.ttl)
+		item.addTimeout(cache.ttl)
 		return item.data, true
 	default:
 		cache.mutex.RLock()
 		defer cache.mutex.RUnlock()
 		item, exists := cache.items[key]
 		if !exists {
-			return "", false
+			return nil, false
 		}
 		return item.data, true
 	}
@@ -112,7 +115,6 @@ func (cache *Cache) Reset() {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	cache.items = make(map[string]*Item)
-	cache.ttl = nil
 }
 
 func (cache *Cache) cleanup() {
@@ -126,7 +128,7 @@ func (cache *Cache) cleanup() {
 }
 
 func (cache *Cache) startCleanupTimer() {
-	ticker := time.Tick(*cache.ttl)
+	ticker := time.Tick(cache.ttl)
 	go (func() {
 		for {
 			select {
@@ -141,11 +143,14 @@ type Option func(*Cache) error
 
 func AutoExpireOption(ttl time.Duration) Option {
 	return func(cache *Cache) error {
-		cache.ttl = &ttl
+		if ttl <= 0 {
+			return errors.New("time should larger than 0")
+		}
+		cache.ttl = ttl
 		return nil
 	}
 }
 
-func hasAutoExpire(cache *Cache) bool {
-	return cache.ttl != nil
+func (cache *Cache) hasAutoExpire() bool {
+	return cache.ttl > 0
 }
