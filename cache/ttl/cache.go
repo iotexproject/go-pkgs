@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package ttlcache
+package ttl
 
 import (
 	"errors"
@@ -30,11 +30,31 @@ import (
 	"time"
 )
 
+type Option func(*Cache) error
+
+func AutoExpireOption(ttl time.Duration) Option {
+	return func(cache *Cache) error {
+		if ttl <= 0 {
+			return errors.New("time should be larger than 0")
+		}
+		cache.ttl = ttl
+		return nil
+	}
+}
+
+func EvictOnErrorOption() Option {
+	return func(cache *Cache) error {
+		cache.evictOnError = true
+		return nil
+	}
+}
+
 // Cache is a synchronised map of items that auto-expire once stale
 type Cache struct {
-	mutex sync.RWMutex
-	items map[string]*Item
-	ttl   time.Duration
+	mutex        sync.RWMutex
+	items        map[string]*Item
+	ttl          time.Duration
+	evictOnError bool
 }
 
 // NewCache creates a instance of the Cache struct. Argument duration
@@ -50,7 +70,7 @@ func NewCache(opts ...Option) (*Cache, error) {
 		}
 	}
 	if cache.hasAutoExpire() {
-		cache.startCleanupTimer()
+		go cache.startCleanupTimer()
 	}
 	return cache, nil
 }
@@ -74,7 +94,11 @@ func (cache *Cache) Get(key string) (interface{}, bool) {
 		cache.mutex.Lock()
 		defer cache.mutex.Unlock()
 		item, exists := cache.items[key]
-		if !exists || item.expired() {
+		if !exists {
+			return nil, false
+		}
+		if item.expired() {
+			delete(cache.items, key)
 			return nil, false
 		}
 		item.addTimeout(cache.ttl)
@@ -110,11 +134,25 @@ func (cache *Cache) Delete(key string) bool {
 	return true
 }
 
+// Range calls f on every key
+func (cache *Cache) Range(f func(key string, value interface{}) error) {
+	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+	for k, v := range cache.items {
+		if cache.hasAutoExpire() && v.expired() {
+			continue
+		}
+		if f(k, v.data) != nil && cache.evictOnError {
+			delete(cache.items, k)
+		}
+	}
+}
+
 // Reset empties the cache
 func (cache *Cache) Reset() {
 	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
 	cache.items = make(map[string]*Item)
+	cache.mutex.Unlock()
 }
 
 func (cache *Cache) cleanup() {
@@ -129,25 +167,11 @@ func (cache *Cache) cleanup() {
 
 func (cache *Cache) startCleanupTimer() {
 	ticker := time.Tick(cache.ttl)
-	go (func() {
-		for {
-			select {
-			case <-ticker:
-				cache.cleanup()
-			}
+	for {
+		select {
+		case <-ticker:
+			cache.cleanup()
 		}
-	})()
-}
-
-type Option func(*Cache) error
-
-func AutoExpireOption(ttl time.Duration) Option {
-	return func(cache *Cache) error {
-		if ttl <= 0 {
-			return errors.New("time should larger than 0")
-		}
-		cache.ttl = ttl
-		return nil
 	}
 }
 
