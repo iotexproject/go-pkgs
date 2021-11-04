@@ -1,6 +1,8 @@
-package ttlcache
+package ttl
 
 import (
+	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -49,60 +51,47 @@ func TestNoExpiration(t *testing.T) {
 
 }
 func TestExpiration(t *testing.T) {
-	cache, _ := NewCache(AutoExpireOption(time.Second))
+	require := require.New(t)
+	cache, err := NewCache(AutoExpireOption(-time.Second))
+	require.Error(err)
+	cache, err = NewCache(AutoExpireOption(time.Second))
+	require.NoError(err)
 
 	cache.Set("x", "1")
 	cache.Set("y", "z")
 	cache.Set("z", "3")
-	cache.startCleanupTimer()
+	require.Equal(3, cache.Count())
 
-	count := cache.Count()
-	if count != 3 {
-		t.Errorf("Expected cache to contain 3 items")
-	}
-
-	<-time.After(500 * time.Millisecond)
-	cache.mutex.Lock()
-	cache.items["y"].addTimeout(time.Second)
+	<-time.After(200 * time.Millisecond)
+	_, exists := cache.Get("y")
+	require.True(exists)
+	cache.mutex.RLock()
 	item, exists := cache.items["x"]
-	cache.mutex.Unlock()
-	if !exists || item.data != "1" || item.expired() {
-		t.Errorf("Expected `x` to not have expired after 200ms")
-	}
-
-	<-time.After(time.Second)
-	cache.mutex.RLock()
-	_, exists = cache.items["x"]
-	if exists {
-		t.Errorf("Expected `x` to have expired")
-	}
-	_, exists = cache.items["z"]
-	if exists {
-		t.Errorf("Expected `z` to have expired")
-	}
-	_, exists = cache.items["y"]
-	if !exists {
-		t.Errorf("Expected `y` to not have expired")
-	}
 	cache.mutex.RUnlock()
+	require.True(exists)
+	require.False(item.expired())
+	require.Equal("1", item.data)
 
-	count = cache.Count()
-	if count != 1 {
-		t.Errorf("Expected cache to contain 1 item")
-	}
-
-	<-time.After(600 * time.Millisecond)
+	<-time.After(900 * time.Millisecond)
 	cache.mutex.RLock()
-	_, exists = cache.items["y"]
-	if exists {
-		t.Errorf("Expected `y` to have expired")
-	}
+	item, exists = cache.items["x"]
+	require.False(exists)
+	require.Nil(item)
+	item, exists = cache.items["z"]
+	require.False(exists)
+	require.Nil(item)
+	item, exists = cache.items["y"]
+	require.True(exists)
+	require.False(item.expired())
+	require.Equal("z", item.data)
 	cache.mutex.RUnlock()
+	require.Equal(1, cache.Count())
 
-	count = cache.Count()
-	if count != 0 {
-		t.Errorf("Expected cache to be empty")
-	}
+	<-time.After(100 * time.Millisecond)
+	data, exists := cache.Get("y")
+	require.False(exists)
+	require.Nil(data)
+	require.Zero(cache.Count())
 }
 
 func TestReset(t *testing.T) {
@@ -119,4 +108,35 @@ func TestReset(t *testing.T) {
 	require.False(exists)
 	require.Empty(data)
 	require.Equal(cache.Count(), 0)
+}
+
+func TestRangeEvictOnError(t *testing.T) {
+	errOdd := errors.New("delete odd index")
+	r := require.New(t)
+
+	cache, err := NewCache(EvictOnErrorOption())
+	r.NoError(err)
+	for i := 0; i < 10000; i++ {
+		cache.Set(strconv.Itoa(i), i+1)
+	}
+	r.Equal(10000, cache.Count())
+
+	cache.Range(func(key string, val interface{}) error {
+		i, _ := strconv.Atoi(key)
+		if i&1 != 0 {
+			return errOdd
+		}
+		return nil
+	})
+
+	r.Equal(5000, cache.Count())
+	for i := 0; i < 10000; i++ {
+		v, ok := cache.Get(strconv.Itoa(i))
+		if i&1 != 0 {
+			r.False(ok)
+		} else {
+			r.True(ok)
+			r.Equal(i+1, v.(int))
+		}
+	}
 }
