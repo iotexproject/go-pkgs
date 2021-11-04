@@ -44,17 +44,17 @@ func AutoExpireOption(ttl time.Duration) Option {
 
 func EvictOnErrorOption() Option {
 	return func(cache *Cache) error {
-		cache.evictOnError = true
+		cache.hasEvictOnError = true
 		return nil
 	}
 }
 
 // Cache is a synchronised map of items that auto-expire once stale
 type Cache struct {
-	mutex        sync.RWMutex
-	items        map[string]*Item
-	ttl          time.Duration
-	evictOnError bool
+	mutex           sync.RWMutex
+	items           map[string]*Item
+	ttl             time.Duration
+	hasEvictOnError bool
 }
 
 // NewCache creates a instance of the Cache struct. Argument duration
@@ -134,7 +134,8 @@ func (cache *Cache) Delete(key string) bool {
 	return true
 }
 
-// Range calls f on every key
+// Range calls f on every key in the map
+// if hasEvictOnError flag is set, then a key failing f() will be deleted from the map
 func (cache *Cache) Range(f func(key string, value interface{}) error) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
@@ -142,7 +143,7 @@ func (cache *Cache) Range(f func(key string, value interface{}) error) {
 		if cache.hasAutoExpire() && v.expired() {
 			continue
 		}
-		if f(k, v.data) != nil && cache.evictOnError {
+		if f(k, v.data) != nil && cache.hasEvictOnError {
 			delete(cache.items, k)
 		}
 	}

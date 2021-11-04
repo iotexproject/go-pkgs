@@ -74,10 +74,12 @@ func TestExpiration(t *testing.T) {
 
 	<-time.After(900 * time.Millisecond)
 	cache.mutex.RLock()
-	_, exists = cache.items["x"]
+	item, exists = cache.items["x"]
 	require.False(exists)
-	_, exists = cache.items["z"]
+	require.Nil(item)
+	item, exists = cache.items["z"]
 	require.False(exists)
+	require.Nil(item)
 	item, exists = cache.items["y"]
 	require.True(exists)
 	require.False(item.expired())
