@@ -137,15 +137,30 @@ func (cache *Cache) Delete(key string) bool {
 // Range calls f on every key in the map
 // if hasEvictOnError flag is set, then a key failing f() will be deleted from the map
 func (cache *Cache) Range(f func(key string, value interface{}) error) {
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
+	var (
+		preCache   = make(map[string]Item)
+		keyFlushed []string
+	)
+	cache.mutex.RLock()
 	for k, v := range cache.items {
+		if v != nil {
+			preCache[k] = *v
+		}
+	}
+	cache.mutex.RUnlock()
+	for k, v := range preCache {
 		if cache.hasAutoExpire() && v.expired() {
 			continue
 		}
-		if f(k, v.data) != nil && cache.hasEvictOnError {
-			delete(cache.items, k)
+		err := f(k, v.data)
+		if err != nil && cache.hasEvictOnError {
+			keyFlushed = append(keyFlushed, k)
 		}
+	}
+	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
+	for _, k := range keyFlushed {
+		delete(cache.items, k)
 	}
 }
 

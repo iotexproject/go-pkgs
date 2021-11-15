@@ -155,11 +155,22 @@ func (c *Cache) Clear() {
 
 // Range call f on every key
 func (c *Cache) Range(f func(key Key, value interface{}) bool) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	var (
+		preCache []entry
+	)
+	c.mutex.RLock()
 	for _, e := range c.cache {
-		kv := e.Value.(*entry)
-		if !f(kv.key, kv.value) {
+		if e == nil {
+			continue
+		}
+		if kv := e.Value.(*entry); kv != nil {
+			preCache = append(preCache, *kv)
+		}
+	}
+	c.mutex.RUnlock()
+	for _, v := range preCache {
+		if !f(v.key, v.value) {
+			// TODO: should not break the loop once failed
 			break
 		}
 	}
@@ -167,12 +178,30 @@ func (c *Cache) Range(f func(key Key, value interface{}) bool) {
 
 // RangeEvictOnError removes the key if call failed
 func (c *Cache) RangeEvictOnError(f func(key Key, value interface{}) error) {
+	var (
+		preCache       []entry
+		listElements   []*list.Element
+		elementFlushed []*list.Element
+	)
+	c.mutex.RLock()
+	for _, e := range c.cache {
+		if e == nil {
+			continue
+		}
+		if kv := e.Value.(*entry); kv != nil {
+			preCache = append(preCache, *kv)
+			listElements = append(listElements, e)
+		}
+	}
+	c.mutex.RUnlock()
+	for i, kv := range preCache {
+		if f(kv.key, kv.value) != nil {
+			elementFlushed = append(elementFlushed, listElements[i])
+		}
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	for _, e := range c.cache {
-		kv := e.Value.(*entry)
-		if f(kv.key, kv.value) != nil {
-			c.removeElement(e)
-		}
+	for _, e := range elementFlushed {
+		c.removeElement(e)
 	}
 }
