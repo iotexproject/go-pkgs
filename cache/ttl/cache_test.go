@@ -2,7 +2,6 @@ package ttl
 
 import (
 	"errors"
-	"strconv"
 	"testing"
 	"time"
 
@@ -110,20 +109,19 @@ func TestReset(t *testing.T) {
 	require.Equal(cache.Count(), 0)
 }
 
-func TestRangeEvictOnError(t *testing.T) {
+func TestRange(t *testing.T) {
 	errOdd := errors.New("delete odd index")
 	r := require.New(t)
 
 	cache, err := NewCache(EvictOnErrorOption())
 	r.NoError(err)
 	for i := 0; i < 10000; i++ {
-		cache.Set(strconv.Itoa(i), i+1)
+		cache.Set(i, i+1)
 	}
 	r.Equal(10000, cache.Count())
 
-	cache.Range(func(key string, val interface{}) error {
-		i, _ := strconv.Atoi(key)
-		if i&1 != 0 {
+	cache.Range(func(key, val interface{}) error {
+		if key.(int)&1 != 0 {
 			return errOdd
 		}
 		return nil
@@ -131,7 +129,7 @@ func TestRangeEvictOnError(t *testing.T) {
 
 	r.Equal(5000, cache.Count())
 	for i := 0; i < 10000; i++ {
-		v, ok := cache.Get(strconv.Itoa(i))
+		v, ok := cache.Get(i)
 		if i&1 != 0 {
 			r.False(ok)
 		} else {
@@ -139,4 +137,14 @@ func TestRangeEvictOnError(t *testing.T) {
 			r.Equal(i+1, v.(int))
 		}
 	}
+}
+
+func TestFunc(t *testing.T) {
+	r := require.New(t)
+
+	cache, err := NewCache()
+	r.NoError(err)
+	r.Panics(func() {
+		cache.Set(AutoExpireOption(time.Second), true)
+	})
 }
