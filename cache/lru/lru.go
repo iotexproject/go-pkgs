@@ -164,15 +164,3 @@ func (c *Cache) Range(f func(key Key, value interface{}) bool) {
 		}
 	}
 }
-
-// RangeEvictOnError removes the key if call failed
-func (c *Cache) RangeEvictOnError(f func(key Key, value interface{}) error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	for _, e := range c.cache {
-		kv := e.Value.(*entry)
-		if f(kv.key, kv.value) != nil {
-			c.removeElement(e)
-		}
-	}
-}

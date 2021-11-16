@@ -109,7 +109,7 @@ func TestReset(t *testing.T) {
 	require.Equal(cache.Count(), 0)
 }
 
-func TestRangeEvictOnError(t *testing.T) {
+func TestRange(t *testing.T) {
 	errOdd := errors.New("delete odd index")
 	r := require.New(t)
 
@@ -137,4 +137,14 @@ func TestRangeEvictOnError(t *testing.T) {
 			r.Equal(i+1, v.(int))
 		}
 	}
+}
+
+func TestFunc(t *testing.T) {
+	r := require.New(t)
+
+	cache, err := NewCache()
+	r.NoError(err)
+	r.Panics(func() {
+		cache.Set(AutoExpireOption(time.Second), true)
+	})
 }
