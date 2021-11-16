@@ -2,7 +2,6 @@ package ttl
 
 import (
 	"errors"
-	"strconv"
 	"testing"
 	"time"
 
@@ -117,13 +116,12 @@ func TestRangeEvictOnError(t *testing.T) {
 	cache, err := NewCache(EvictOnErrorOption())
 	r.NoError(err)
 	for i := 0; i < 10000; i++ {
-		cache.Set(strconv.Itoa(i), i+1)
+		cache.Set(i, i+1)
 	}
 	r.Equal(10000, cache.Count())
 
-	cache.Range(func(key string, val interface{}) error {
-		i, _ := strconv.Atoi(key)
-		if i&1 != 0 {
+	cache.Range(func(key, val interface{}) error {
+		if key.(int)&1 != 0 {
 			return errOdd
 		}
 		return nil
@@ -131,7 +129,7 @@ func TestRangeEvictOnError(t *testing.T) {
 
 	r.Equal(5000, cache.Count())
 	for i := 0; i < 10000; i++ {
-		v, ok := cache.Get(strconv.Itoa(i))
+		v, ok := cache.Get(i)
 		if i&1 != 0 {
 			r.False(ok)
 		} else {

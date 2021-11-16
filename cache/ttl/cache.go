@@ -52,7 +52,7 @@ func EvictOnErrorOption() Option {
 // Cache is a synchronised map of items that auto-expire once stale
 type Cache struct {
 	mutex           sync.RWMutex
-	items           map[string]*Item
+	items           map[interface{}]*Item
 	ttl             time.Duration
 	hasEvictOnError bool
 }
@@ -62,7 +62,7 @@ type Cache struct {
 // is passed, the item will persistently existed in the cache.
 func NewCache(opts ...Option) (*Cache, error) {
 	cache := &Cache{
-		items: map[string]*Item{},
+		items: map[interface{}]*Item{},
 	}
 	for _, opt := range opts {
 		if err := opt(cache); err != nil {
@@ -76,7 +76,7 @@ func NewCache(opts ...Option) (*Cache, error) {
 }
 
 // Set is a thread-safe way to add new items to the map
-func (cache *Cache) Set(key string, data interface{}) {
+func (cache *Cache) Set(key, data interface{}) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	item := &Item{data: data}
@@ -88,7 +88,7 @@ func (cache *Cache) Set(key string, data interface{}) {
 
 // Get is a thread-safe way to lookup items
 // Every lookup, also add the timeout of the item, hence extending it's life
-func (cache *Cache) Get(key string) (interface{}, bool) {
+func (cache *Cache) Get(key interface{}) (interface{}, bool) {
 	switch {
 	case cache.hasAutoExpire():
 		cache.mutex.Lock()
@@ -124,7 +124,7 @@ func (cache *Cache) Count() int {
 }
 
 // Delete removes existing item in the cache
-func (cache *Cache) Delete(key string) bool {
+func (cache *Cache) Delete(key interface{}) bool {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	if _, exist := cache.items[key]; !exist {
@@ -136,7 +136,7 @@ func (cache *Cache) Delete(key string) bool {
 
 // Range calls f on every key in the map
 // if hasEvictOnError flag is set, then a key failing f() will be deleted from the map
-func (cache *Cache) Range(f func(key string, value interface{}) error) {
+func (cache *Cache) Range(f func(key, value interface{}) error) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	for k, v := range cache.items {
@@ -152,7 +152,7 @@ func (cache *Cache) Range(f func(key string, value interface{}) error) {
 // Reset empties the cache
 func (cache *Cache) Reset() {
 	cache.mutex.Lock()
-	cache.items = make(map[string]*Item)
+	cache.items = make(map[interface{}]*Item)
 	cache.mutex.Unlock()
 }
 
