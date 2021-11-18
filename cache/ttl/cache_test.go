@@ -148,3 +148,14 @@ func TestFunc(t *testing.T) {
 		cache.Set(AutoExpireOption(time.Second), true)
 	})
 }
+
+func TestAllKeys(t *testing.T) {
+	require := require.New(t)
+	cache, _ := NewCache()
+
+	cache.Set("x", "1")
+	cache.Set("y", "1")
+	cache.Set("x", "1")
+	keys := cache.Keys()
+	require.Equal(2, len(keys))
+}
