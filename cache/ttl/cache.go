@@ -123,13 +123,13 @@ func (cache *Cache) Count() int {
 }
 
 // AllKeys returns all keys store in the cache
-func (cache *Cache) AllKeys() []interface{} {
+func (cache *Cache) Keys() []interface{} {
 	var ret []interface{}
 	cache.mutex.RLock()
-	defer cache.mutex.RUnlock()
-	for k, _ := range cache.items {
+	for k := range cache.items {
 		ret = append(ret, k)
 	}
+	cache.mutex.RUnlock()
 	return ret
 }
 

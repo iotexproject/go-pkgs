@@ -156,6 +156,6 @@ func TestAllKeys(t *testing.T) {
 	cache.Set("x", "1")
 	cache.Set("y", "1")
 	cache.Set("x", "1")
-	keys := cache.AllKeys()
+	keys := cache.Keys()
 	require.Equal(2, len(keys))
 }
