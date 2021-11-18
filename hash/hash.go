@@ -10,6 +10,8 @@ import (
 	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/iotexproject/go-pkgs/util"
 )
 
 var (
@@ -66,7 +68,7 @@ func BytesToHash160(b []byte) Hash160 {
 
 // HexStringToHash256 decodes the hex string, then copy byte slice into hash
 func HexStringToHash256(s string) (Hash256, error) {
-	b, err := hex.DecodeString(s)
+	b, err := hex.DecodeString(util.Remove0xPrefix(s))
 	if err != nil {
 		return ZeroHash256, err
 	}
@@ -75,7 +77,7 @@ func HexStringToHash256(s string) (Hash256, error) {
 
 // HexStringToHash160 decodes the hex string, then copy byte slice into hash
 func HexStringToHash160(s string) (Hash160, error) {
-	b, err := hex.DecodeString(s)
+	b, err := hex.DecodeString(util.Remove0xPrefix(s))
 	if err != nil {
 		return ZeroHash160, err
 	}
