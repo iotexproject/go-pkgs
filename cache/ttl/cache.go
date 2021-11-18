@@ -115,12 +115,22 @@ func (cache *Cache) Get(key interface{}) (interface{}, bool) {
 }
 
 // Count returns the number of items in the cache
-// (helpful for tracking memory leaks)
 func (cache *Cache) Count() int {
 	cache.mutex.RLock()
 	count := len(cache.items)
 	cache.mutex.RUnlock()
 	return count
+}
+
+// AllKeys returns all keys store in the cache
+func (cache *Cache) AllKeys() []interface{} {
+	var ret []interface{}
+	cache.mutex.RLock()
+	defer cache.mutex.RUnlock()
+	for k, _ := range cache.items {
+		ret = append(ret, k)
+	}
+	return ret
 }
 
 // Delete removes existing item in the cache
