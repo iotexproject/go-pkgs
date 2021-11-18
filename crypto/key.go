@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/pkg/errors"
+
+	"github.com/iotexproject/go-pkgs/util"
 )
 
 // const
@@ -71,21 +73,9 @@ func GenerateKeySm2() (PrivateKey, error) {
 	return newP256sm2PrvKey()
 }
 
-func has0xPrefix(s string) bool {
-	if len(s) > 1 {
-		if s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
-			return true
-		}
-	}
-	return false
-}
-
 // HexStringToPublicKey decodes a string to PublicKey
 func HexStringToPublicKey(pubKey string) (PublicKey, error) {
-	if has0xPrefix(pubKey) {
-		pubKey = pubKey[2:]
-	}
-	b, err := hex.DecodeString(pubKey)
+	b, err := hex.DecodeString(util.Remove0xPrefix(pubKey))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode public key %s", pubKey)
 	}
@@ -94,10 +84,7 @@ func HexStringToPublicKey(pubKey string) (PublicKey, error) {
 
 // HexStringToPrivateKey decodes a string to PrivateKey
 func HexStringToPrivateKey(prvKey string) (PrivateKey, error) {
-	if has0xPrefix(prvKey) {
-		prvKey = prvKey[2:]
-	}
-	b, err := hex.DecodeString(prvKey)
+	b, err := hex.DecodeString(util.Remove0xPrefix(prvKey))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode public key %s", prvKey)
 	}
