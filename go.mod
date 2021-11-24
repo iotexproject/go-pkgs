@@ -11,7 +11,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.4
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/google/uuid v1.1.5 // indirect
-	github.com/iotexproject/iotex-address v0.2.5
+	github.com/iotexproject/iotex-address v0.2.6
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
