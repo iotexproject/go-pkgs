@@ -8,6 +8,7 @@ package hash
 
 import (
 	"encoding/hex"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -19,6 +20,8 @@ var (
 	ZeroHash256 = Hash256{}
 	// ZeroHash160 is 160-bit of all zero
 	ZeroHash160 = Hash160{}
+
+	bufPool sync.Pool
 )
 
 type (
@@ -28,10 +31,20 @@ type (
 	Hash160 [20]byte
 )
 
+func init() {
+	bufPool = sync.Pool{
+		New: func() interface{} {
+			return crypto.NewKeccakState()
+		},
+	}
+}
+
 // Hash160b returns 160-bit (20-byte) hash of input
 func Hash160b(input []byte) Hash160 {
 	// use sha3 algorithm
-	digest := crypto.Keccak256(input)
+	obj := bufPool.Get().(crypto.KeccakState)
+	digest := crypto.HashData(obj, input)
+	bufPool.Put(obj)
 	var hash Hash160
 	copy(hash[:], digest[12:])
 	return hash
@@ -40,10 +53,10 @@ func Hash160b(input []byte) Hash160 {
 // Hash256b returns 256-bit (32-byte) hash of input
 func Hash256b(input []byte) Hash256 {
 	// use sha3 algorithm
-	digest := crypto.Keccak256(input)
-	var hash Hash256
-	copy(hash[:], digest)
-	return hash
+	obj := bufPool.Get().(crypto.KeccakState)
+	digest := crypto.HashData(obj, input)
+	bufPool.Put(obj)
+	return Hash256(digest)
 }
 
 // BytesToHash256 copies the byte slice into hash
