@@ -42,9 +42,9 @@ func init() {
 // Hash160b returns 160-bit (20-byte) hash of input
 func Hash160b(input []byte) Hash160 {
 	// use sha3 algorithm
-	recycledBuf := bufPool.Get().(crypto.KeccakState)
-	digest := crypto.HashData(recycledBuf, input)
-	bufPool.Put(recycledBuf)
+	sha3Buf := bufPool.Get().(crypto.KeccakState)
+	digest := crypto.HashData(sha3Buf, input)
+	bufPool.Put(sha3Buf)
 	var hash Hash160
 	copy(hash[:], digest[12:])
 	return hash
@@ -53,12 +53,12 @@ func Hash160b(input []byte) Hash160 {
 // Hash256b returns 256-bit (32-byte) hash of input
 func Hash256b(input []byte) Hash256 {
 	// use sha3 algorithm
-	recycledBuf := bufPool.Get().(crypto.KeccakState)
-	recycledBuf.Reset()
-	recycledBuf.Write(input)
+	sha3Buf := bufPool.Get().(crypto.KeccakState)
+	sha3Buf.Reset()
+	sha3Buf.Write(input)
 	var ret Hash256
-	recycledBuf.Read(ret[:])
-	bufPool.Put(recycledBuf)
+	sha3Buf.Read(ret[:])
+	bufPool.Put(sha3Buf)
 	return ret
 }
 
