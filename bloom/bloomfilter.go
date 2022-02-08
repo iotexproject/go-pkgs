@@ -30,6 +30,9 @@ type (
 
 		// Bytes returns the bytes of bloom filter
 		Bytes() []byte
+
+		// FromBytes loads data into the struct
+		FromBytes([]byte, uint) error
 	}
 )
 
@@ -44,22 +47,7 @@ func NewBloomFilterLegacy(m, h uint) (BloomFilter, error) {
 	}
 }
 
-// BloomFilterFromBytesLegacy constructs a bloom filter from bytes
-func BloomFilterFromBytesLegacy(b []byte, m, h uint) (BloomFilter, error) {
-	switch m {
-	case 2048:
-		return bloom2048FromBytes(b, h)
-	default:
-		return nil, errors.Errorf("bloom filter size %d not supported", m)
-	}
-}
-
 // NewBloomFilter returns a new bloom filter
 func NewBloomFilter(m, h uint64) (BloomFilter, error) {
 	return newBloomMbits(m, h)
-}
-
-// BloomFilterFromBytes constructs a bloom filter from bytes
-func BloomFilterFromBytes(buf []byte) (BloomFilter, error) {
-	return bloomMbitsFromBytes(buf)
 }

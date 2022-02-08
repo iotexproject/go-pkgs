@@ -45,7 +45,8 @@ func TestBloomMbits(t *testing.T) {
 		require.EqualValues(24+(v.m+63)>>6<<3+32, len(b))
 
 		// decode and verify
-		f, err = bloomMbitsFromBytes(b)
+		newBF := bloomMbits{}
+		err = newBF.FromBytes(b, 0)
 		require.NoError(err)
 		for i := uint64(0); i < v.n; i++ {
 			k := hash.Hash256b(byteutil.Uint64ToBytesBigEndian(i))
@@ -62,16 +63,34 @@ func TestBloomMbits(t *testing.T) {
 		}
 
 		// corrupted hash
-		b[len(b)-1]++
-		f, err = bloomMbitsFromBytes(b)
+		bTmp := make([]byte, len(b))
+		copy(bTmp, b)
+		bTmp[len(b)-1]++
+		err = newBF.FromBytes(bTmp, 0)
 		require.Equal(ErrHashMismatch, errors.Cause(err))
 
 		// not enough data
-		b = b[1 : len(b)-32]
-		h = hash.Hash256b(b)
-		b = append(b, h[:]...)
-		f, err = bloomMbitsFromBytes(b)
-		require.Nil(f)
+		bTmp = bTmp[1 : len(b)-32]
+		h = hash.Hash256b(bTmp)
+		bTmp = append(bTmp, h[:]...)
+		err = newBF.FromBytes(bTmp, 0)
 		require.Equal(io.ErrUnexpectedEOF, errors.Cause(err))
+
+		// verify again
+		err = newBF.FromBytes(b, 0)
+		require.NoError(err)
+		for i := uint64(0); i < v.n; i++ {
+			k := hash.Hash256b(byteutil.Uint64ToBytesBigEndian(i))
+			require.True(f.Exist(k[:8]))
+		}
+		require.Equal(v.m, f.Size())
+		require.Equal(v.k, f.NumHash())
+		require.Equal(v.n, f.NumElements())
+		h = hash.Hash256b(byteutil.Uint64ToBytesBigEndian(v.n))
+		k = h[:]
+		for i := 0; i < 4; i++ {
+			require.False(f.Exist(k[:8]))
+			k = k[8:]
+		}
 	}
 }

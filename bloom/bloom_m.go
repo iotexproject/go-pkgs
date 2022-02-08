@@ -158,41 +158,39 @@ func (b *bloomMbits) getBit(pos uint64) byte {
 	return byte(b.buckets[pos>>6]>>(pos&0x3f)) & 1
 }
 
-func bloomMbitsFromBytes(data []byte) (BloomFilter, error) {
+// FromBytes loads data in the struct
+func (b *bloomMbits) FromBytes(data []byte, _ uint) error {
 	// last 32 bytes is hash of preceding data
 	dataLength := len(data) - 32
 	wantedHash := hash.BytesToHash256(data[dataLength:])
 	actualHash := hash.Hash256b(data[:dataLength])
 	if actualHash != wantedHash {
-		return nil, errors.Wrapf(ErrHashMismatch, "wanted = %x, actual = %x", wantedHash, actualHash)
+		return errors.Wrapf(ErrHashMismatch, "wanted = %x, actual = %x", wantedHash, actualHash)
 	}
 
 	// read m, n, k
 	var m, k, n uint64
 	buf := bytes.NewBuffer(data[:dataLength])
 	if err := binary.Read(buf, binary.BigEndian, &m); err != nil {
-		return nil, err
+		return err
 	}
-
 	if err := binary.Read(buf, binary.BigEndian, &k); err != nil {
-		return nil, err
+		return err
 	}
-
 	if err := binary.Read(buf, binary.BigEndian, &n); err != nil {
-		return nil, err
+		return err
+	}
+	bucketsLen := (m + 63) >> 6
+	if bucketsLen > uint64(cap(b.buckets)) {
+		b.buckets = make([]uint64, bucketsLen)
+	}
+	b.buckets = b.buckets[:bucketsLen]
+	if err := binary.Read(buf, binary.BigEndian, b.buckets); err != nil {
+		return err
 	}
 
-	buckets := make([]uint64, (m+63)>>6)
-	if err := binary.Read(buf, binary.BigEndian, buckets); err != nil {
-		return nil, err
-	}
-
-	return &bloomMbits{
-		buckets: buckets,
-		m:       m,
-		k:       k,
-		n:       n,
-		round:   k >> 2,
-		rem:     int(k & 3),
-	}, nil
+	b.m, b.k, b.n = m, k, n
+	b.round = b.k >> 2
+	b.rem = int(b.k & 3)
+	return nil
 }
