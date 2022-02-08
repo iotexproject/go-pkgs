@@ -27,14 +27,13 @@ func newBloom2048(h uint) (BloomFilter, error) {
 	return &bloom2048b{numHash: h}, nil
 }
 
-func (b *bloom2048b) FromBytes(data []byte, h uint) error {
-	if h == 0 || h > 16 {
+func (b *bloom2048b) FromBytes(data []byte) error {
+	if b.numHash == 0 || b.numHash > 16 {
 		return errors.New("expecting 0 < number of hash functions <= 16")
 	}
 	if len(data) != 256 {
 		return errors.Errorf("wrong length %d, expecting 256", len(data))
 	}
-	b.numHash = h
 	copy(b.array[:], data[:])
 	return nil
 }

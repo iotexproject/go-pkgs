@@ -32,7 +32,7 @@ type (
 		Bytes() []byte
 
 		// FromBytes loads data into the struct
-		FromBytes([]byte, uint) error
+		FromBytes([]byte) error
 	}
 )
 

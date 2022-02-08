@@ -159,7 +159,7 @@ func (b *bloomMbits) getBit(pos uint64) byte {
 }
 
 // FromBytes loads data in the struct
-func (b *bloomMbits) FromBytes(data []byte, _ uint) error {
+func (b *bloomMbits) FromBytes(data []byte) error {
 	// last 32 bytes is hash of preceding data
 	dataLength := len(data) - 32
 	wantedHash := hash.BytesToHash256(data[dataLength:])

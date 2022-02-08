@@ -46,7 +46,7 @@ func TestBloomMbits(t *testing.T) {
 
 		// decode and verify
 		newBF := bloomMbits{}
-		err = newBF.FromBytes(b, 0)
+		err = newBF.FromBytes(b)
 		require.NoError(err)
 		for i := uint64(0); i < v.n; i++ {
 			k := hash.Hash256b(byteutil.Uint64ToBytesBigEndian(i))
@@ -66,18 +66,18 @@ func TestBloomMbits(t *testing.T) {
 		bTmp := make([]byte, len(b))
 		copy(bTmp, b)
 		bTmp[len(b)-1]++
-		err = newBF.FromBytes(bTmp, 0)
+		err = newBF.FromBytes(bTmp)
 		require.Equal(ErrHashMismatch, errors.Cause(err))
 
 		// not enough data
 		bTmp = bTmp[1 : len(b)-32]
 		h = hash.Hash256b(bTmp)
 		bTmp = append(bTmp, h[:]...)
-		err = newBF.FromBytes(bTmp, 0)
+		err = newBF.FromBytes(bTmp)
 		require.Equal(io.ErrUnexpectedEOF, errors.Cause(err))
 
 		// verify again
-		err = newBF.FromBytes(b, 0)
+		err = newBF.FromBytes(b)
 		require.NoError(err)
 		for i := uint64(0); i < v.n; i++ {
 			k := hash.Hash256b(byteutil.Uint64ToBytesBigEndian(i))
