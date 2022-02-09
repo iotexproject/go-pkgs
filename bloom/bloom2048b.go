@@ -27,6 +27,7 @@ func newBloom2048(h uint) (BloomFilter, error) {
 	return &bloom2048b{numHash: h}, nil
 }
 
+// FromBytes loads data in the struct
 func (b *bloom2048b) FromBytes(data []byte) error {
 	if b.numHash == 0 || b.numHash > 16 {
 		return errors.New("expecting 0 < number of hash functions <= 16")
