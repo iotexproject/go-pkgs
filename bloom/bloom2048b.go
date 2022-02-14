@@ -27,17 +27,16 @@ func newBloom2048(h uint) (BloomFilter, error) {
 	return &bloom2048b{numHash: h}, nil
 }
 
-// bloom2048FromBytes constructs a 2048-bit bloom filter from bytes
-func bloom2048FromBytes(b []byte, h uint) (BloomFilter, error) {
-	if h == 0 || h > 16 {
-		return nil, errors.New("expecting 0 < number of hash functions <= 16")
+// FromBytes loads data in the struct
+func (b *bloom2048b) FromBytes(data []byte) error {
+	if b.numHash == 0 || b.numHash > 16 {
+		return errors.New("expecting 0 < number of hash functions <= 16")
 	}
-	if len(b) != 256 {
-		return nil, errors.Errorf("wrong length %d, expecting 256", len(b))
+	if len(data) != 256 {
+		return errors.Errorf("wrong length %d, expecting 256", len(data))
 	}
-	f := bloom2048b{numHash: h}
-	copy(f.array[:], b[:])
-	return &f, nil
+	copy(b.array[:], data[:])
+	return nil
 }
 
 // Size of bloom filter in bits
