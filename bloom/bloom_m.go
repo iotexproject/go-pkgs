@@ -183,14 +183,13 @@ func (b *bloomMbits) FromBytes(data []byte) error {
 	bucketsLen := (m + 63) >> 6
 	if bucketsLen > uint64(cap(b.buckets)) {
 		b.buckets = make([]uint64, bucketsLen)
+	} else {
+		b.buckets = b.buckets[:bucketsLen]
 	}
-	b.buckets = b.buckets[:bucketsLen]
 	if err := binary.Read(buf, binary.BigEndian, b.buckets); err != nil {
 		return err
 	}
 
-	b.m, b.k, b.n = m, k, n
-	b.round = b.k >> 2
-	b.rem = int(b.k & 3)
+	b.m, b.k, b.n, b.round, b.rem = m, k, n, k>>2, int(k&3)
 	return nil
 }
