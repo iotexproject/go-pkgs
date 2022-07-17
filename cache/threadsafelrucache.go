@@ -21,6 +21,11 @@ func NewThreadSafeLruCache(maxEntries int) *ThreadSafeLruCache {
 	return lru.New(maxEntries)
 }
 
+// NewDummyLruCache returns a dummy lru cache
+func NewDummyLruCache() *lru.DummyCache {
+	return lru.NewDummyLRU()
+}
+
 // NewThreadSafeLruCacheWithOnEvicted returns a thread safe lru cache with fix size
 func NewThreadSafeLruCacheWithOnEvicted(maxEntries int, onEvicted func(key Key, value interface{})) *ThreadSafeLruCache {
 	cache := lru.New(maxEntries)
