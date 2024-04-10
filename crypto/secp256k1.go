@@ -93,6 +93,10 @@ func (k *secp256k1PrvKey) Zero() {
 // PublicKey function
 //======================================
 
+var (
+	secp256k1PubKeyByteLen = (crypto.S256().Params().BitSize + 7) >> 3
+)
+
 // newSecp256k1PubKeyFromBytes converts bytes format to PublicKey
 func newSecp256k1PubKeyFromBytes(b []byte) (PublicKey, error) {
 	if !validateRawK256Pubkey(b) {
@@ -105,8 +109,7 @@ func newSecp256k1PubKeyFromBytes(b []byte) (PublicKey, error) {
 }
 
 func validateRawK256Pubkey(data []byte) bool {
-	byteLen := (crypto.S256().Params().BitSize + 7) >> 3
-	if len(data) != 1+2*byteLen {
+	if len(data) != 1+2*secp256k1PubKeyByteLen {
 		return false
 	}
 	if data[0] != 4 { // uncompressed form
