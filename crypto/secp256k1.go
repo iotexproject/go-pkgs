@@ -24,7 +24,7 @@ type (
 	}
 	// secp256k1PubKey implements the SECP256K1 public key
 	secp256k1PubKey struct {
-		*ecdsa.PublicKey
+		raw []byte
 	}
 )
 
@@ -72,7 +72,7 @@ func (k *secp256k1PrvKey) EcdsaPrivateKey() interface{} {
 // PublicKey returns the public key corresponding to private key
 func (k *secp256k1PrvKey) PublicKey() PublicKey {
 	return &secp256k1PubKey{
-		PublicKey: &k.PrivateKey.PublicKey,
+		raw: crypto.FromECDSAPub(&k.PrivateKey.PublicKey),
 	}
 }
 
@@ -93,20 +93,35 @@ func (k *secp256k1PrvKey) Zero() {
 // PublicKey function
 //======================================
 
+var (
+	secp256k1PubKeyByteLen = (crypto.S256().Params().BitSize + 7) >> 3
+)
+
 // newSecp256k1PubKeyFromBytes converts bytes format to PublicKey
 func newSecp256k1PubKeyFromBytes(b []byte) (PublicKey, error) {
-	pk, err := crypto.UnmarshalPubkey(b)
-	if err != nil {
-		return nil, err
+	if !validateP256k1PubkeyBytes(b) {
+		return nil, ErrPublicKey
 	}
+
 	return &secp256k1PubKey{
-		PublicKey: pk,
+		raw: b,
 	}, nil
+}
+
+func validateP256k1PubkeyBytes(data []byte) bool {
+	if len(data) != 1+2*secp256k1PubKeyByteLen {
+		return false
+	}
+	if data[0] != 4 { // uncompressed form
+		return false
+	}
+
+	return true
 }
 
 // Bytes returns the public key in bytes representation
 func (k *secp256k1PubKey) Bytes() []byte {
-	return crypto.FromECDSAPub(k.PublicKey)
+	return k.raw
 }
 
 // HexString returns the public key in hex string
@@ -116,7 +131,12 @@ func (k *secp256k1PubKey) HexString() string {
 
 // EcdsaPublicKey returns the embedded ecdsa publick key
 func (k *secp256k1PubKey) EcdsaPublicKey() interface{} {
-	return k.PublicKey
+	pk, err := crypto.UnmarshalPubkey(k.raw)
+	if err != nil {
+		// it should be validated when initialized
+		panic(err)
+	}
+	return pk
 }
 
 // Hash is the last 20-byte of keccak hash of public key (X, Y) co-ordinate, same as Ethereum address generation

@@ -69,3 +69,19 @@ func TestSecp256k1(t *testing.T) {
 	require.Equal("53fbc28faf9a52dfe5f591948a23189e900381b5", hex.EncodeToString(pk.Hash()))
 
 }
+
+func BenchmarkSecp256k1(b *testing.B) {
+	require := require.New(b)
+
+	sk, err := newSecp256k1PrvKey()
+	require.NoError(err)
+	defer sk.Zero()
+	pk := sk.PublicKey()
+	require.Equal(secp256pubKeyLength, len(pk.Bytes()))
+	b.ResetTimer()
+	pkData := pk.Bytes()
+	for n := 0; n < b.N; n++ {
+		_, err := newSecp256k1PubKeyFromBytes(pkData)
+		require.NoError(err)
+	}
+}
