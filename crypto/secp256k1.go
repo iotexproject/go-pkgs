@@ -99,7 +99,7 @@ var (
 
 // newSecp256k1PubKeyFromBytes converts bytes format to PublicKey
 func newSecp256k1PubKeyFromBytes(b []byte) (PublicKey, error) {
-	if !validateRawK256Pubkey(b) {
+	if !validateP256k1PubkeyBytes(b) {
 		return nil, ErrPublicKey
 	}
 
@@ -108,7 +108,7 @@ func newSecp256k1PubKeyFromBytes(b []byte) (PublicKey, error) {
 	}, nil
 }
 
-func validateRawK256Pubkey(data []byte) bool {
+func validateP256k1PubkeyBytes(data []byte) bool {
 	if len(data) != 1+2*secp256k1PubKeyByteLen {
 		return false
 	}
