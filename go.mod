@@ -8,6 +8,7 @@ require (
 	github.com/dustinxie/gmsm v1.4.0
 	github.com/ethereum/go-ethereum v1.10.4
 	github.com/iotexproject/iotex-address v0.2.7
+	github.com/ledgerwatch/secp256k1 v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/stretchr/testify v1.7.0

@@ -12,8 +12,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/iotexproject/iotex-address/address"
+	"github.com/ledgerwatch/secp256k1"
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/go-pkgs/util"
