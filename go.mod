@@ -5,6 +5,7 @@ go 1.21.11
 require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/dustinxie/gmsm v1.4.0
+	github.com/erigontech/secp256k1 v1.1.0
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/iotexproject/iotex-address v0.2.7
 	github.com/pkg/errors v0.9.1
