@@ -118,12 +118,11 @@ func (b *bloomMbits) Exist(key []byte) bool {
 
 // Bytes returns the bytes of bloom filter (in Big Endian)
 //
-//   m:       uint64 x 1
-//   k:       uint64 x 1
-//   n:       uint64 x 1
-//   buckets: []uint64
-//   hash:    [32]byte = Hash256b(above)
-//
+//	m:       uint64 x 1
+//	k:       uint64 x 1
+//	n:       uint64 x 1
+//	buckets: []uint64
+//	hash:    [32]byte = Hash256b(above)
 func (b *bloomMbits) Bytes() []byte {
 	buf := new(bytes.Buffer)
 

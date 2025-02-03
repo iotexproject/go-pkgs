@@ -9,16 +9,11 @@
 # Go parameters
 GOCMD=go
 GOLINT=golint
-GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 
 # Pkgs
-ALL_PKGS := $(shell go list ./... )
 PKGS := $(shell go list ./... | grep -v /vendor/ )
-
-# Docker parameters
-DOCKERCMD=docker
 
 # Package Info
 PACKAGE_VERSION := $(shell git describe --tags --always)
