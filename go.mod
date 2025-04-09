@@ -6,9 +6,9 @@ require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/dustinxie/gmsm v1.4.0
+	github.com/erigontech/secp256k1 v1.1.0
 	github.com/ethereum/go-ethereum v1.10.4
 	github.com/iotexproject/iotex-address v0.2.7
-	github.com/ledgerwatch/secp256k1 v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/stretchr/testify v1.7.0

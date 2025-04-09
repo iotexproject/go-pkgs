@@ -10,10 +10,10 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 
+	"github.com/erigontech/secp256k1"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/iotexproject/iotex-address/address"
-	"github.com/ledgerwatch/secp256k1"
 	"github.com/pkg/errors"
 
 	"github.com/iotexproject/go-pkgs/util"
