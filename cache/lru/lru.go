@@ -34,6 +34,9 @@ type Cache struct {
 	// executed when an entry is purged from the cache.
 	OnEvicted func(key Key, value interface{})
 
+	// NoOverwrite, if true, Add will not update value if key exists.
+	NoOverwrite bool
+
 	ll    *list.List
 	cache map[interface{}]*list.Element
 }
@@ -46,10 +49,26 @@ type entry struct {
 	value interface{}
 }
 
+type Option func(c *Cache)
+
+// EvictOption sets the eviction callback function
+func EvictOption(onEvicted func(key Key, value interface{})) Option {
+	return func(c *Cache) {
+		c.OnEvicted = onEvicted
+	}
+}
+
+// NoOverwriteOption sets the no overwrite option
+func NoOverwriteOption() Option {
+	return func(c *Cache) {
+		c.NoOverwrite = true
+	}
+}
+
 // New creates a new Cache.
 // If maxEntries is zero, the cache has no limit and it's assumed
 // that eviction is done by the caller.
-func New(maxEntries int) *Cache {
+func New(maxEntries int, opts ...Option) *Cache {
 	return &Cache{
 		MaxEntries: maxEntries,
 		ll:         list.New(),
@@ -66,6 +85,9 @@ func (c *Cache) Add(key Key, value interface{}) {
 		c.ll = list.New()
 	}
 	if ee, ok := c.cache[key]; ok {
+		if c.NoOverwrite {
+			return
+		}
 		c.ll.MoveToFront(ee)
 		ee.Value.(*entry).value = value
 		return

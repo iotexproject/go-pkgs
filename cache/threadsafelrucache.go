@@ -31,8 +31,8 @@ type LRUCache interface {
 type Key = lru.Key
 
 // NewThreadSafeLruCache returns a thread safe lru cache with fix size
-func NewThreadSafeLruCache(maxEntries int) LRUCache {
-	return lru.New(maxEntries)
+func NewThreadSafeLruCache(maxEntries int, opts ...lru.Option) LRUCache {
+	return lru.New(maxEntries, opts...)
 }
 
 // NewThreadSafeLruCacheWithOnEvicted returns a thread safe lru cache with fix size
