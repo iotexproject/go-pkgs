@@ -40,6 +40,8 @@ var (
 	ErrPublicKey = errors.New("invalid public key")
 	// ErrPrivateKey indicates the error of private key
 	ErrPrivateKey = errors.New("invalid private key")
+	// ErrSignature indicates the error of signature
+	ErrSignature = errors.New("invalid signature")
 )
 
 type (
