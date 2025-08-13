@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/stretchr/testify/require"
 )
 
@@ -118,4 +119,199 @@ func TestBLS12381CompatibilityEth(t *testing.T) {
 			r.Equal(c.aggregate, hex.EncodeToString(aggSig), "aggregate signature hex string should match expected")
 		}
 	})
+}
+
+// BenchmarkBLS12381Sign benchmarks the BLS12381 signing operation
+func BenchmarkBLS12381Sign(b *testing.B) {
+	// Generate a test private key
+	ikm := make([]byte, 32)
+	for i := range ikm {
+		ikm[i] = byte(i)
+	}
+
+	priv, err := GenerateBLS12381PrivateKey(ikm)
+	if err != nil {
+		b.Fatalf("Failed to generate private key: %v", err)
+	}
+
+	// Create a test message
+	msg := hash.Hash160b([]byte("test message for benchmarking"))
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_, err := priv.Sign(msg[:])
+		if err != nil {
+			b.Fatalf("Failed to sign message: %v", err)
+		}
+	}
+}
+
+// BenchmarkBLS12381Verify benchmarks the BLS12381 signature verification operation
+func BenchmarkBLS12381Verify(b *testing.B) {
+	// Generate a test private key
+	ikm := make([]byte, 32)
+	for i := range ikm {
+		ikm[i] = byte(i)
+	}
+
+	priv, err := GenerateBLS12381PrivateKey(ikm)
+	if err != nil {
+		b.Fatalf("Failed to generate private key: %v", err)
+	}
+
+	pub := priv.PublicKey()
+
+	// Create a test message and sign it
+	msg := hash.Hash160b([]byte("test message for benchmarking"))
+	sig, err := priv.Sign(msg[:])
+	if err != nil {
+		b.Fatalf("Failed to sign message: %v", err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		if !pub.Verify(msg[:], sig) {
+			b.Fatalf("Failed to verify signature")
+		}
+	}
+}
+
+// BenchmarkBLSAggregateSignature benchmarks the BLS signature aggregation operation
+func BenchmarkBLSAggregateSignature(b *testing.B) {
+	// Generate multiple signatures for aggregation
+	numSigs := 24
+	var signatures [][]byte
+	msg := hash.Hash160b([]byte("test message for benchmarking"))
+
+	for i := 0; i < numSigs; i++ {
+		ikm := make([]byte, 32)
+		for j := range ikm {
+			ikm[j] = byte(i*32 + j)
+		}
+
+		priv, err := GenerateBLS12381PrivateKey(ikm)
+		if err != nil {
+			b.Fatalf("Failed to generate private key %d: %v", i, err)
+		}
+
+		sig, err := priv.Sign(msg[:])
+		if err != nil {
+			b.Fatalf("Failed to sign message %d: %v", i, err)
+		}
+
+		signatures = append(signatures, sig)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_, err := BLSAggregateSignature(signatures)
+		if err != nil {
+			b.Fatalf("Failed to aggregate signatures: %v", err)
+		}
+	}
+}
+
+// BenchmarkBLSAggregateVerify benchmarks the BLS aggregate signature verification operation
+func BenchmarkBLSAggregateVerify(b *testing.B) {
+	// Generate multiple key pairs and signatures for aggregate verification
+	numSigs := 24
+	var signatures [][]byte
+	var pubKeys [][]byte
+	msg := hash.Hash160b([]byte("test message for benchmarking"))
+
+	for i := 0; i < numSigs; i++ {
+		ikm := make([]byte, 32)
+		for j := range ikm {
+			ikm[j] = byte(i*32 + j)
+		}
+
+		priv, err := GenerateBLS12381PrivateKey(ikm)
+		if err != nil {
+			b.Fatalf("Failed to generate private key %d: %v", i, err)
+		}
+
+		pub := priv.PublicKey()
+		pubKeys = append(pubKeys, pub.Bytes())
+
+		sig, err := priv.Sign(msg[:])
+		if err != nil {
+			b.Fatalf("Failed to sign message %d: %v", i, err)
+		}
+
+		signatures = append(signatures, sig)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		valid, err := BLSAggregateVerify(pubKeys, signatures, msg[:])
+		if err != nil {
+			b.Fatalf("Failed to verify aggregate signature: %v", err)
+		}
+		if !valid {
+			b.Fatalf("Aggregate signature verification failed")
+		}
+	}
+}
+
+// BenchmarkBLSAggregateSignatureAndVerify benchmarks the combined BLS aggregate signing and verification operations
+func BenchmarkBLSAggregateSignatureAndVerify(b *testing.B) {
+	// Generate multiple key pairs for aggregate operations
+	numSigs := 10
+	var privKeys []*BLS12381PrivateKey
+	var pubKeys [][]byte
+	msg := hash.Hash160b([]byte("test message for benchmarking"))
+
+	for i := 0; i < numSigs; i++ {
+		ikm := make([]byte, 32)
+		for j := range ikm {
+			ikm[j] = byte(i*32 + j)
+		}
+
+		priv, err := GenerateBLS12381PrivateKey(ikm)
+		if err != nil {
+			b.Fatalf("Failed to generate private key %d: %v", i, err)
+		}
+
+		privKeys = append(privKeys, priv)
+		pub := priv.PublicKey()
+		pubKeys = append(pubKeys, pub.Bytes())
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		// Sign with all private keys
+		var signatures [][]byte
+		for _, priv := range privKeys {
+			sig, err := priv.Sign(msg[:])
+			if err != nil {
+				b.Fatalf("Failed to sign message: %v", err)
+			}
+			signatures = append(signatures, sig)
+		}
+
+		// Aggregate signatures
+		_, err := BLSAggregateSignature(signatures)
+		if err != nil {
+			b.Fatalf("Failed to aggregate signatures: %v", err)
+		}
+
+		// Verify aggregate signature
+		valid, err := BLSAggregateVerify(pubKeys, signatures, msg[:])
+		if err != nil {
+			b.Fatalf("Failed to verify aggregate signature: %v", err)
+		}
+		if !valid {
+			b.Fatalf("Aggregate signature verification failed")
+		}
+	}
 }
