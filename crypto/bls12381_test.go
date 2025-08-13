@@ -92,18 +92,28 @@ func TestBLS12381CompatibilityEth(t *testing.T) {
 	})
 	t.Run("aggregateSignature", func(t *testing.T) {
 		cases := []struct {
+			msg        string
+			pubkeys    []string
 			signatures []string
 			aggregate  string
 		}{
 			{
-				signatures: []string{
-					"aed6ed66be49f11bed468f79f5a78aeace27b2ac54f86376ef002dba97bce37ebdf1d9e89f5b2615d13a5f99d6c3db47101cb38d994a0d2ab7497325e890bcff1be500b55be25ff5d1cfc75db5e5d92fab362a2488708a5320d8fd51c0a02601",
-					"9943fab4f36a5eedc81b3b18ba294f846c53099d2b58ef00cb2f87b9fbe786bb206c72fa43b59bc46e6d3536b57e14f00b0f9e4d01ac88397bbf60f8357369d38e0340e72b80b778b63899c1f603df6371e26d7262c7818c01eb020c5a580018",
-					"b04ae4d58b4eaee0c6d2b76e8fcfde6a6133a413cfd8e2b8e632bb7e52e75d3963ac8a2bce84a7ebbd0476c4fdeb53041992c04facd5f4ecdd0dffbad6303e2c76dcb59593aa231c780632600d4bd6bba08a68715365c82b09c6824b099bb647",
-					"88b79c9e5cf6e87cd4e77e14586e00086b538a67557baeeb4baef369afce6978d074f57ea47e6cddb9bd43253eca1f3e029fdac240719eb965d9c2cfbeb5c20c8048f79f1dfb352c6846f54b4135bce1147185f6631d258268c6733cab223a78",
-					"a41009b442ff28ff1423195b003fd4300ff3e0c1863be132f211b0fce3512ccf52b0f3e8ffc6120040b856df45363a0803fdfe99f10b7bfffdd55ac35b089a3de5f32211c2a55363b02062ff6c0b850dc9c47606012d0add3b9e4070cd7ebb0e",
+				msg: "813eab1bc4999dda23dd7e3d556d15fb02c23c9cce59fae5156d97ff453915a9",
+				pubkeys: []string{
+					"ad5b9a812c121e0b06b52ce2ff3d1879fc4e8386d3f7aa2926b25d40d966031f13f98ff804a4e2ee188c9d9fc815a1d2",
+					"a06d81d1bc33d6eaa8d5254d17e8521d26887077a55f00358daac76629ef662f0ea48b05ac3f46fbed2f18c909dd6526",
+					"8d4ac523a5ec3dfbee4d1ed69c82f50ae13c9764a42dbf1f0530e19909a5baed6c2a0813e3fd7720ddf3980172fb477b",
+					"93b7f26176aa97f76476396ed8b695c2e0f559ad7bed50233e542f604510d30c4fdd42a8df78062e36da7db5c86a0252",
+					"84308af049bbc88e33a8a6f1bb5d92039c8f8106b1adab34c22c04864f8ee1fa530676c00bbcffd65d18017452974493",
 				},
-				aggregate: "88c9cf19801cd15672f16fb23612d36ae5aaf6eba8eb01f11e66b8f42b152e516c2e1466338e7383a5f7a8cf88ad3ef117866e3fdd96844e31b4b35808718290c181cdbdf33d6deaa9f9a815eaed3a6d900fb14ee8de5608a12906b76cb3d476",
+				signatures: []string{
+					"a60e5fa25333fd52875cd56715387c673fb8514284f71ef8fd24bc5f3446aa9f9d7017d594430da105f1d2030ac802eb000976682ed19baa04e649069905561003a430a193f430d10c3f8cc4cff6ab81821b4c4d4ec93d964938da472c474023",
+					"965c555db62c4056340f819c7b34ef93999c50ea508909aa266d21e7bcfb43e31a7a5f0815d207742703af2a6ed1d481081f7e0edccb25b0974cac99c6a8d6c73b70c3d219538d3578281878f309b960a214d9482a874627c3c7368548f28637",
+					"ab7c0c75923974160959bfd3b3c1856feec7fb5e998d9b8fa93f132774c9017a12181fad340a642cb6022556b5d65f0710b0ac2337655a980e55cdfe0d90cdea4832c5d62ff19a5da196af67df6b87ca0d877d61ddc6fb9d2d7ccff4a5649a52",
+					"8e1bbe115f6d4209928561fd667fca15a950e3d1b0fa8299e9cbc592a93ae439f26ea26f448451e1637689d19139e66c00770bdce20fb82869865a709f868dc77307a23862b5267537c8e5f5a7fd8d91580d57da1e57458fc805834311c79871",
+					"8ead132c26c914953dd619947ee6b6a80caa1dbe4ec0bf832819cc2a2d7cac14db68d10ad88246e6486b6832e00e3b7100550402a38b837498358b96c23949c5ddd47cf3532e6a958d8187c34723b35ec79b8f9fb213a56204c91b9955f8d2ca",
+				},
+				aggregate: "a226c93260a62bc95dbddfe81b128f943d8db79931ca08d46aa7fb6720ea639fe6de056ba4a24a79ccf796eac974d86106353141aa6bdb6c79b53987b9823ab5ecffb2b9e1f5cf88f42b2e62136ecb867af9894c067ba7bb66981f043b4ceb38",
 			},
 		}
 		for _, c := range cases {
@@ -114,9 +124,26 @@ func TestBLS12381CompatibilityEth(t *testing.T) {
 				r.NoError(err, "decoding signature should not error")
 				sigs = append(sigs, sigBytes)
 			}
-			aggSig, err := BLSAggregateSignature(sigs)
+			aggSig, err := NewBLSAggregateSignature(sigs)
 			r.NoError(err, "aggregating signatures should not error")
-			r.Equal(c.aggregate, hex.EncodeToString(aggSig), "aggregate signature hex string should match expected")
+			r.Equal(c.aggregate, aggSig.HexString(), "aggregate signature hex string should match expected")
+			// from bytes
+			aggSigFromBytes, err := BLSAggregateSignatureFromBytes(aggSig.Bytes())
+			r.NoError(err, "creating aggregate signature from bytes should not error")
+			r.Equal(aggSig.HexString(), aggSigFromBytes.HexString(), "aggregate signature from bytes hex string should match")
+			r.Equal(aggSig.Bytes(), aggSigFromBytes.Bytes(), "aggregate signature from bytes should match")
+			// verify the aggregate signature
+			var pubKeys []*BLS12381PublicKey
+			for _, pk := range c.pubkeys {
+				pkBytes, err := hex.DecodeString(pk)
+				r.NoError(err, "decoding public key should not error")
+				pubKey, err := BLS12381PublicKeyFromBytes(pkBytes)
+				r.NoError(err, "creating public key from bytes should not error")
+				pubKeys = append(pubKeys, pubKey)
+			}
+			msgBytes, err := hex.DecodeString(c.msg)
+			r.NoError(err, "decoding message should not error")
+			r.True(aggSig.Verify(pubKeys, msgBytes), "aggregate signature should be valid")
 		}
 	})
 }
@@ -210,7 +237,7 @@ func BenchmarkBLSAggregateSignature(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := BLSAggregateSignature(signatures)
+		_, err := NewBLSAggregateSignature(signatures)
 		if err != nil {
 			b.Fatalf("Failed to aggregate signatures: %v", err)
 		}
@@ -222,7 +249,7 @@ func BenchmarkBLSAggregateVerify(b *testing.B) {
 	// Generate multiple key pairs and signatures for aggregate verification
 	numSigs := 24
 	var signatures [][]byte
-	var pubKeys [][]byte
+	var pubKeys []*BLS12381PublicKey
 	msg := hash.Hash160b([]byte("test message for benchmarking"))
 
 	for i := 0; i < numSigs; i++ {
@@ -237,7 +264,7 @@ func BenchmarkBLSAggregateVerify(b *testing.B) {
 		}
 
 		pub := priv.PublicKey()
-		pubKeys = append(pubKeys, pub.Bytes())
+		pubKeys = append(pubKeys, pub)
 
 		sig, err := priv.Sign(msg[:])
 		if err != nil {
@@ -247,69 +274,16 @@ func BenchmarkBLSAggregateVerify(b *testing.B) {
 		signatures = append(signatures, sig)
 	}
 
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	for i := 0; i < b.N; i++ {
-		valid, err := BLSAggregateVerify(pubKeys, signatures, msg[:])
-		if err != nil {
-			b.Fatalf("Failed to verify aggregate signature: %v", err)
-		}
-		if !valid {
-			b.Fatalf("Aggregate signature verification failed")
-		}
-	}
-}
-
-// BenchmarkBLSAggregateSignatureAndVerify benchmarks the combined BLS aggregate signing and verification operations
-func BenchmarkBLSAggregateSignatureAndVerify(b *testing.B) {
-	// Generate multiple key pairs for aggregate operations
-	numSigs := 10
-	var privKeys []*BLS12381PrivateKey
-	var pubKeys [][]byte
-	msg := hash.Hash160b([]byte("test message for benchmarking"))
-
-	for i := 0; i < numSigs; i++ {
-		ikm := make([]byte, 32)
-		for j := range ikm {
-			ikm[j] = byte(i*32 + j)
-		}
-
-		priv, err := GenerateBLS12381PrivateKey(ikm)
-		if err != nil {
-			b.Fatalf("Failed to generate private key %d: %v", i, err)
-		}
-
-		privKeys = append(privKeys, priv)
-		pub := priv.PublicKey()
-		pubKeys = append(pubKeys, pub.Bytes())
+	aggSign, err := NewBLSAggregateSignature(signatures)
+	if err != nil {
+		b.Fatalf("Failed to aggregate signatures: %v", err)
 	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		// Sign with all private keys
-		var signatures [][]byte
-		for _, priv := range privKeys {
-			sig, err := priv.Sign(msg[:])
-			if err != nil {
-				b.Fatalf("Failed to sign message: %v", err)
-			}
-			signatures = append(signatures, sig)
-		}
-
-		// Aggregate signatures
-		_, err := BLSAggregateSignature(signatures)
-		if err != nil {
-			b.Fatalf("Failed to aggregate signatures: %v", err)
-		}
-
-		// Verify aggregate signature
-		valid, err := BLSAggregateVerify(pubKeys, signatures, msg[:])
-		if err != nil {
-			b.Fatalf("Failed to verify aggregate signature: %v", err)
-		}
+		valid := aggSign.Verify(pubKeys, msg[:])
 		if !valid {
 			b.Fatalf("Aggregate signature verification failed")
 		}

@@ -13,6 +13,8 @@ const (
 	BLSSecretKeyLength = 32
 	// BLSPubkeyLength is the length of a BLS public key in bytes
 	BLSPubkeyLength = 48
+	// BLSAggregateSignatureLength is the length of a BLS aggregate signature in bytes
+	BLSAggregateSignatureLength = 96
 )
 
 var dst = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_")
@@ -32,6 +34,10 @@ type (
 	// BLS12381PublicKey represents a BLS12381 public key
 	BLS12381PublicKey struct {
 		p *blstPublicKey
+	}
+	// BLSAggregateSignature represents an aggregated BLS signature
+	BLSAggregateSignature struct {
+		p *blstSignature
 	}
 )
 
@@ -126,37 +132,48 @@ func (k *BLS12381PublicKey) Verify(msg []byte, sig []byte) bool {
 	return signature.Verify(true, k.p, false, msg, dst)
 }
 
-// BLSAggregateSignature aggregates multiple BLS signatures into a single signature.
-func BLSAggregateSignature(sigs [][]byte) ([]byte, error) {
-	signature, err := blsAggregateSignature(sigs)
-	if err != nil {
-		return nil, err
-	}
-	return signature.Compress(), nil
-}
-
-// BLSAggregateVerify verifies multiple BLS signatures against the message using the provided public keys.
-func BLSAggregateVerify(pubKeys [][]byte, sigs [][]byte, msg []byte) (bool, error) {
-	blstPubkeys := make([]*blstPublicKey, len(pubKeys))
-	for i, pubKey := range pubKeys {
-		blstPubkeys[i] = new(blstPublicKey).Uncompress(pubKey)
-	}
-	signature, err := blsAggregateSignature(sigs)
-	if err != nil {
-		return false, err
-	}
-	return signature.FastAggregateVerify(true, blstPubkeys, msg, dst), nil
-}
-
-func blsAggregateSignature(sigs [][]byte) (*blstSignature, error) {
+// NewBLSAggregateSignature aggregates multiple BLS signatures into a single signature.
+func NewBLSAggregateSignature(sigs [][]byte) (*BLSAggregateSignature, error) {
 	signature := new(blstAggregateSignature)
 	valid := signature.AggregateCompressed(sigs, true)
 	if !valid {
 		return nil, errors.Wrapf(ErrSignature, "provided signatures fail the group check and cannot be compressed")
 	}
-	return signature.ToAffine(), nil
+	return &BLSAggregateSignature{p: signature.ToAffine()}, nil
 }
 
+// BLSAggregateSignatureFromBytes creates a BLS aggregate signature from the given byte slice.
+func BLSAggregateSignatureFromBytes(b []byte) (*BLSAggregateSignature, error) {
+	if len(b) != BLSAggregateSignatureLength {
+		return nil, errors.Wrapf(ErrSignature, "invalid aggregate signature length: got %d, want %d", len(b), BLSAggregateSignatureLength)
+	}
+	p := new(blstSignature).Uncompress(b)
+	if p == nil {
+		return nil, errors.Wrapf(ErrSignature, "invalid aggregate signature")
+	}
+	return &BLSAggregateSignature{p: p}, nil
+}
+
+// Bytes returns the byte representation of the BLS aggregate signature.
+func (s *BLSAggregateSignature) Bytes() []byte {
+	return s.p.Compress()
+}
+
+// HexString returns the hexadecimal string representation of the BLS aggregate signature.
+func (s *BLSAggregateSignature) HexString() string {
+	return hex.EncodeToString(s.Bytes())
+}
+
+// Verify verifies the aggregate signature against the given public keys and message.
+func (s *BLSAggregateSignature) Verify(pubKeys []*BLS12381PublicKey, msg []byte) bool {
+	blstPubkeys := make([]*blstPublicKey, len(pubKeys))
+	for i, pubKey := range pubKeys {
+		blstPubkeys[i] = pubKey.p
+	}
+	return s.p.FastAggregateVerify(true, blstPubkeys, msg, dst)
+}
+
+// IsZero checks if the given byte slice is all zeros in constant time.
 func IsZero(sKey []byte) bool {
 	b := byte(0)
 	for _, s := range sKey {
