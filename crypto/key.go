@@ -10,9 +10,9 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 
+	"github.com/erigontech/secp256k1"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/pkg/errors"
 
@@ -40,6 +40,8 @@ var (
 	ErrPublicKey = errors.New("invalid public key")
 	// ErrPrivateKey indicates the error of private key
 	ErrPrivateKey = errors.New("invalid private key")
+	// ErrSignature indicates the error of signature
+	ErrSignature = errors.New("invalid signature")
 )
 
 type (
