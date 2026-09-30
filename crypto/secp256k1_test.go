@@ -7,8 +7,11 @@
 package crypto
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"encoding/hex"
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -68,6 +71,104 @@ func TestSecp256k1(t *testing.T) {
 	require.EqualValues(28, sig[Secp256k1SigSize])
 	require.Equal("53fbc28faf9a52dfe5f591948a23189e900381b5", hex.EncodeToString(pk.Hash()))
 
+}
+
+func TestRecoverPubkeyRejectsInvalidSignature(t *testing.T) {
+	sk, err := newSecp256k1PrvKey()
+	require.NoError(t, err)
+	defer sk.Zero()
+
+	h := hash.Hash256b([]byte("invalid recovery ID"))
+	sig, err := sk.Sign(h[:])
+	require.NoError(t, err)
+
+	for _, recID := range []byte{4, 15, 26, 31, 34, 197, 255} {
+		t.Run(fmt.Sprintf("recovery ID %d", recID), func(t *testing.T) {
+			invalidSig := append([]byte(nil), sig...)
+			invalidSig[Secp256k1SigSize] = recID
+			originalSig := append([]byte(nil), invalidSig...)
+
+			pk, err := RecoverPubkey(h[:], invalidSig)
+
+			require.Nil(t, pk)
+			require.ErrorIs(t, err, ErrInvalidKey)
+			require.Equal(t, originalSig, invalidSig)
+		})
+	}
+
+	for _, length := range []int{Secp256k1SigSize, Secp256k1SigSizeWithRecID + 1} {
+		t.Run(fmt.Sprintf("signature length %d", length), func(t *testing.T) {
+			pk, err := RecoverPubkey(h[:], make([]byte, length))
+
+			require.Nil(t, pk)
+			require.ErrorIs(t, err, ErrInvalidKey)
+		})
+	}
+}
+
+func TestRecoverPubkeyDoesNotMutateSignature(t *testing.T) {
+	sk, err := newSecp256k1PrvKey()
+	require.NoError(t, err)
+	defer sk.Zero()
+
+	h := hash.Hash256b([]byte("immutable signature"))
+	sig, err := sk.Sign(h[:])
+	require.NoError(t, err)
+	sig[Secp256k1SigSize] += 27
+	originalSig := append([]byte(nil), sig...)
+
+	recovered, err := RecoverPubkey(h[:], sig)
+
+	require.NoError(t, err)
+	require.Equal(t, sk.PublicKey(), recovered)
+	require.Equal(t, originalSig, sig)
+}
+
+func TestRecoverPubkeyConcurrentLegacySignature(t *testing.T) {
+	sk, err := newSecp256k1PrvKey()
+	require.NoError(t, err)
+	defer sk.Zero()
+
+	h := hash.Hash256b([]byte("shared legacy signature"))
+	sig, err := sk.Sign(h[:])
+	require.NoError(t, err)
+	sig[Secp256k1SigSize] += 27
+	originalSig := append([]byte(nil), sig...)
+	expectedPubkey := sk.PublicKey().Bytes()
+
+	const (
+		workers    = 32
+		iterations = 100
+	)
+	start := make(chan struct{})
+	errCh := make(chan error, workers)
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			for j := 0; j < iterations; j++ {
+				recovered, err := RecoverPubkey(h[:], sig)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				if !bytes.Equal(expectedPubkey, recovered.Bytes()) {
+					errCh <- fmt.Errorf("recovered an unexpected public key")
+					return
+				}
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+	require.Equal(t, originalSig, sig)
 }
 
 func BenchmarkSecp256k1(b *testing.B) {
