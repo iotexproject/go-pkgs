@@ -151,16 +151,15 @@ func RecoverPubkey(msg, sig []byte) (PublicKey, error) {
 }
 
 func recoverSecp256k1(msg, sig []byte) (PublicKey, error) {
+	normalizedSig := sig
 	if len(sig) >= Secp256k1SigSizeWithRecID && sig[Secp256k1SigSize] >= 27 {
 		// when an Ethereum signature is calculated, 27 is added to recovery id
 		// https://github.com/ethereum/go-ethereum/commit/b59c8399fbe42390a3d41e945d03b1f21c1a9b8d#diff-31c4aa3a4249d4755fc652d3e0087b98R226-R232
-		sig[Secp256k1SigSize] -= 27
-		defer func() {
-			sig[Secp256k1SigSize] += 27
-		}()
+		normalizedSig = append([]byte(nil), sig...)
+		normalizedSig[Secp256k1SigSize] -= 27
 	}
 
-	pk, err := secp256k1.RecoverPubkey(msg, sig)
+	pk, err := secp256k1.RecoverPubkey(msg, normalizedSig)
 	if err != nil {
 		return nil, err
 	}
